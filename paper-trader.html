@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paper Trading Bot — $1K → $100K Challenge</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-card: #1a2235;
+  --bg-card-hover: #1f2a40;
+  --border: #2a3548;
+  --text-primary: #e2e8f0;
+  --text-secondary: #8892a4;
+  --text-muted: #556177;
+  --green: #22c55e;
+  --green-dim: #166534;
+  --red: #ef4444;
+  --red-dim: #7f1d1d;
+  --blue: #3b82f6;
+  --yellow: #eab308;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --orange: #f97316;
+}
+body {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ========== HEADER ========== */
+.header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo { font-size: 18px; font-weight: 700; color: var(--green); }
+.logo span { color: var(--text-muted); font-weight: 400; }
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.status-running { background: var(--green-dim); color: var(--green); }
+.status-paused { background: var(--red-dim); color: var(--red); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg-card-hover); }
+.btn-green { border-color: var(--green-dim); background: var(--green-dim); color: var(--green); }
+.btn-green:hover { background: #1a7a3a; }
+.btn-red { border-color: var(--red-dim); background: var(--red-dim); color: var(--red); }
+.btn-red:hover { background: #991b1b; }
+.speed-control { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+.speed-control select {
+  background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 6px; font-family: inherit; font-size: 11px; cursor: pointer;
+}
+
+/* ========== LAYOUT ========== */
+.dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  padding: 12px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ========== CARDS ========== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-body { padding: 14px; }
+
+/* ========== PORTFOLIO VALUE ========== */
+.portfolio-card { grid-column: 1 / -1; }
+.portfolio-stats {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.portfolio-main {}
+.portfolio-value {
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.portfolio-change { font-size: 14px; margin-bottom: 12px; }
+.portfolio-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+.meta-item { display: flex; flex-direction: column; gap: 2px; }
+.meta-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.meta-value { font-size: 14px; font-weight: 600; }
+
+/* Progress bar */
+.progress-section { flex: 1; min-width: 250px; max-width: 500px; }
+.progress-label {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;
+}
+.progress-bar {
+  height: 20px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green-dim), var(--green));
+  border-radius: 10px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 30px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15));
+  border-radius: 0 10px 10px 0;
+}
+.progress-text {
+  font-size: 11px; color: var(--text-muted); margin-top: 4px;
+  text-align: center;
+}
+
+/* ========== PRICE TICKER ========== */
+.ticker-card { grid-column: 1 / -1; }
+.ticker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+}
+.ticker-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  transition: border-color 0.15s;
+}
+.ticker-item:hover { border-color: var(--text-muted); }
+.ticker-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.ticker-symbol { font-size: 13px; font-weight: 700; }
+.ticker-badge {
+  font-size: 9px; padding: 2px 6px; border-radius: 3px;
+  font-weight: 600;
+}
+.ticker-price { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+.ticker-change { font-size: 11px; }
+.ticker-volume { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.signal-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+
+/* ========== CHART ========== */
+.chart-card { grid-column: 1 / 3; min-height: 300px; }
+.chart-card .card-body { padding: 8px; height: 280px; }
+.chart-card canvas { width: 100% !important; height: 100% !important; }
+
+/* ========== POSITIONS ========== */
+.positions-card { grid-column: 3 / 4; grid-row: 3 / 5; }
+.position-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.position-item:last-child { border-bottom: none; }
+.position-top { display: flex; justify-content: space-between; align-items: center; }
+.position-symbol { font-weight: 700; font-size: 13px; }
+.position-pnl { font-size: 13px; font-weight: 600; }
+.position-details { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); }
+.position-strategy { font-size: 10px; color: var(--text-muted); }
+.no-positions { color: var(--text-muted); font-size: 12px; text-align: center; padding: 30px 0; }
+
+/* ========== TRADE LOG ========== */
+.log-card { grid-column: 1 / 3; max-height: 400px; }
+.log-card .card-body { padding: 0; max-height: 340px; overflow-y: auto; }
+.log-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.log-table th {
+  position: sticky; top: 0;
+  background: var(--bg-card);
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+.log-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(42, 53, 72, 0.5);
+  white-space: nowrap;
+}
+.log-table tr:hover td { background: var(--bg-secondary); }
+.trade-buy { color: var(--green); }
+.trade-sell { color: var(--red); }
+.strategy-tag {
+  font-size: 9px; padding: 2px 6px; border-radius: 3px;
+  font-weight: 600; text-transform: uppercase;
+}
+.strategy-rsi { background: rgba(168, 85, 247, 0.2); color: var(--purple); }
+.strategy-ma { background: rgba(6, 182, 212, 0.2); color: var(--cyan); }
+.strategy-momentum { background: rgba(249, 115, 22, 0.2); color: var(--orange); }
+.strategy-stoploss { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+.strategy-takeprofit { background: rgba(34, 197, 94, 0.2); color: var(--green); }
+.no-trades { color: var(--text-muted); font-size: 12px; text-align: center; padding: 30px 0; }
+
+/* ========== STRATEGY PANEL ========== */
+.strategy-card { grid-column: 3 / 4; }
+.strategy-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.strategy-item:last-child { border-bottom: none; }
+.strategy-name { font-size: 12px; font-weight: 600; }
+.strategy-info { font-size: 10px; color: var(--text-secondary); }
+.strategy-stats { text-align: right; }
+.strategy-trades { font-size: 11px; }
+.strategy-winrate { font-size: 10px; color: var(--text-muted); }
+
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-card); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1100px) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr;
+  }
+  .portfolio-card, .ticker-card { grid-column: 1 / -1; }
+  .chart-card { grid-column: 1 / -1; }
+  .positions-card { grid-column: 1 / -1; grid-row: auto; }
+  .log-card { grid-column: 1 / -1; }
+  .strategy-card { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .dashboard { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
+  .portfolio-value { font-size: 28px; }
+  .header { padding: 8px 12px; }
+  .header-left { flex-wrap: wrap; }
+  .portfolio-stats { flex-direction: column; }
+  .progress-section { max-width: none; }
+  .ticker-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes flash-green { 0%,100%{background:transparent} 50%{background:rgba(34,197,94,0.1)} }
+@keyframes flash-red { 0%,100%{background:transparent} 50%{background:rgba(239,68,68,0.1)} }
+.flash-green { animation: flash-green 0.6s; }
+.flash-red { animation: flash-red 0.6s; }
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">PAPER TRADER <span>v1.0</span></div>
+    <div id="statusBadge" class="status-badge status-paused">PAUSED</div>
+    <div style="font-size:11px;color:var(--text-muted)" id="lastUpdate">Waiting for data...</div>
+  </div>
+  <div class="header-right">
+    <div class="speed-control">
+      <label>Refresh:</label>
+      <select id="refreshRate">
+        <option value="10000">10s</option>
+        <option value="15000" selected>15s</option>
+        <option value="30000">30s</option>
+        <option value="60000">60s</option>
+      </select>
+    </div>
+    <button id="toggleBtn" class="btn btn-green" onclick="toggleBot()">▶ START</button>
+    <button class="btn" onclick="resetBot()">↺ RESET</button>
+  </div>
+</div>
+
+<!-- ========== DASHBOARD ========== -->
+<div class="dashboard">
+
+  <!-- Portfolio Value -->
+  <div class="card portfolio-card">
+    <div class="card-body">
+      <div class="portfolio-stats">
+        <div class="portfolio-main">
+          <div class="portfolio-value" id="portfolioValue">$1,000.00</div>
+          <div class="portfolio-change" id="portfolioChange">+$0.00 (0.00%)</div>
+          <div class="portfolio-meta">
+            <div class="meta-item">
+              <span class="meta-label">Cash</span>
+              <span class="meta-value" id="cashValue">$1,000.00</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Invested</span>
+              <span class="meta-value" id="investedValue">$0.00</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Total Trades</span>
+              <span class="meta-value" id="totalTrades">0</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Win Rate</span>
+              <span class="meta-value" id="winRate">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="progress-section">
+          <div class="progress-label">
+            <span>$1,000 → $100,000 Challenge</span>
+            <span id="progressPct">1.0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 1%"></div>
+          </div>
+          <div class="progress-text" id="progressText">$99,000.00 to go</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Price Ticker -->
+  <div class="card ticker-card">
+    <div class="card-header">
+      Live Prices
+      <span id="apiStatus" style="font-size:10px;color:var(--green)">● Connected</span>
+    </div>
+    <div class="card-body">
+      <div class="ticker-grid" id="tickerGrid"></div>
+    </div>
+  </div>
+
+  <!-- Portfolio Chart -->
+  <div class="card chart-card">
+    <div class="card-header">Portfolio Value Over Time</div>
+    <div class="card-body">
+      <canvas id="portfolioChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Open Positions -->
+  <div class="card positions-card">
+    <div class="card-header">
+      Open Positions
+      <span id="positionCount">0</span>
+    </div>
+    <div class="card-body" id="positionsList">
+      <div class="no-positions">No open positions</div>
+    </div>
+  </div>
+
+  <!-- Trade Log -->
+  <div class="card log-card">
+    <div class="card-header">
+      Trade Log
+      <span id="logCount">0 trades</span>
+    </div>
+    <div class="card-body" id="tradeLogBody">
+      <div class="no-trades">No trades yet — start the bot to begin</div>
+    </div>
+  </div>
+
+  <!-- Strategy Stats -->
+  <div class="card strategy-card">
+    <div class="card-header">Strategy Performance</div>
+    <div class="card-body" id="strategyStats"></div>
+  </div>
+
+</div>
+
+<script>
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
+const STARTING_BALANCE = 1000;
+const GOAL = 100000;
+const ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano', 'avalanche-2', 'chainlink', 'polkadot'];
+const SYMBOLS = { bitcoin:'BTC', ethereum:'ETH', solana:'SOL', cardano:'ADA', 'avalanche-2':'AVAX', chainlink:'LINK', polkadot:'DOT' };
+const MAX_POSITION_PCT = 0.20;    // Never more than 20% of portfolio in one trade
+const STOP_LOSS_PCT = -0.05;      // Sell if position drops 5%
+const TAKE_PROFIT_PCT = 0.15;     // Sell if position gains 15%
+const RSI_PERIOD = 14;
+const RSI_OVERSOLD = 30;
+const RSI_OVERBOUGHT = 70;
+const MA_SHORT = 5;
+const MA_LONG = 15;
+const MOMENTUM_PERIOD = 10;
+const MOMENTUM_THRESHOLD = 0.04;  // 4% move triggers momentum signal
+const MIN_HISTORY = 20;           // Minimum price history points before trading
+
+// =============================================================================
+// STATE
+// =============================================================================
+let botRunning = false;
+let cash = STARTING_BALANCE;
+let positions = [];       // { id, asset, symbol, qty, entryPrice, strategy, timestamp }
+let tradeLog = [];        // { id, type, asset, symbol, price, qty, value, pnl, strategy, timestamp }
+let priceHistory = {};    // { assetId: [prices...] }
+let currentPrices = {};   // { assetId: price }
+let portfolioHistory = [{ time: new Date(), value: STARTING_BALANCE }];
+let tradeIdCounter = 0;
+let refreshTimer = null;
+let apiErrors = 0;
+let lastPrices = {};
+
+// Strategy stats
+let strategyStats = {
+  RSI:       { trades: 0, wins: 0, totalPnl: 0 },
+  MA:        { trades: 0, wins: 0, totalPnl: 0 },
+  Momentum:  { trades: 0, wins: 0, totalPnl: 0 },
+  StopLoss:  { trades: 0, wins: 0, totalPnl: 0 },
+  TakeProfit:{ trades: 0, wins: 0, totalPnl: 0 },
+};
+
+// =============================================================================
+// CHART SETUP
+// =============================================================================
+const ctx = document.getElementById('portfolioChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [formatTime(new Date())],
+    datasets: [{
+      label: 'Portfolio Value ($)',
+      data: [STARTING_BALANCE],
+      borderColor: '#22c55e',
+      backgroundColor: 'rgba(34,197,94,0.08)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.3,
+      pointRadius: 0,
+      pointHitRadius: 8,
+    }, {
+      label: 'Goal ($100K)',
+      data: [GOAL],
+      borderColor: 'rgba(234,179,8,0.3)',
+      borderDash: [6, 4],
+      borderWidth: 1,
+      fill: false,
+      pointRadius: 0,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { intersect: false, mode: 'index' },
+    plugins: {
+      legend: { display: true, labels: { color: '#8892a4', font: { size: 10, family: 'monospace' }, boxWidth: 12 } },
+      tooltip: {
+        backgroundColor: '#1a2235',
+        titleColor: '#e2e8f0',
+        bodyColor: '#e2e8f0',
+        borderColor: '#2a3548',
+        borderWidth: 1,
+        titleFont: { family: 'monospace', size: 11 },
+        bodyFont: { family: 'monospace', size: 11 },
+        callbacks: { label: c => ` ${c.dataset.label}: $${c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2})}` }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#556177', font: { size: 9, family: 'monospace' }, maxTicksLimit: 10 },
+        grid: { color: 'rgba(42,53,72,0.5)' }
+      },
+      y: {
+        ticks: {
+          color: '#556177',
+          font: { size: 10, family: 'monospace' },
+          callback: v => '$' + v.toLocaleString()
+        },
+        grid: { color: 'rgba(42,53,72,0.5)' }
+      }
+    }
+  }
+});
+
+// =============================================================================
+// PRICE FETCHING
+// =============================================================================
+async function fetchPrices() {
+  try {
+    const ids = ASSETS.join(',');
+    const resp = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    lastPrices = { ...currentPrices };
+
+    for (const asset of ASSETS) {
+      if (data[asset]) {
+        const price = data[asset].usd;
+        currentPrices[asset] = price;
+        if (!priceHistory[asset]) priceHistory[asset] = [];
+        priceHistory[asset].push(price);
+        // Keep last 200 data points
+        if (priceHistory[asset].length > 200) priceHistory[asset].shift();
+      }
+    }
+
+    apiErrors = 0;
+    document.getElementById('apiStatus').innerHTML = '● Connected';
+    document.getElementById('apiStatus').style.color = 'var(--green)';
+    document.getElementById('lastUpdate').textContent = `Updated ${formatTime(new Date())}`;
+
+    updateTickerUI(data);
+    return true;
+  } catch (err) {
+    apiErrors++;
+    console.error('Price fetch error:', err);
+    document.getElementById('apiStatus').innerHTML = `● Error (retry ${apiErrors})`;
+    document.getElementById('apiStatus').style.color = 'var(--red)';
+    return false;
+  }
+}
+
+// =============================================================================
+// TECHNICAL INDICATORS
+// =============================================================================
+function calcRSI(prices, period = RSI_PERIOD) {
+  if (prices.length < period + 1) return 50; // neutral if not enough data
+  const recent = prices.slice(-(period + 1));
+  let gains = 0, losses = 0;
+  for (let i = 1; i < recent.length; i++) {
+    const change = recent[i] - recent[i - 1];
+    if (change > 0) gains += change;
+    else losses += Math.abs(change);
+  }
+  gains /= period;
+  losses /= period;
+  if (losses === 0) return 100;
+  const rs = gains / losses;
+  return 100 - (100 / (1 + rs));
+}
+
+function calcMA(prices, period) {
+  if (prices.length < period) return null;
+  const slice = prices.slice(-period);
+  return slice.reduce((a, b) => a + b, 0) / period;
+}
+
+function calcMomentum(prices, period = MOMENTUM_PERIOD) {
+  if (prices.length < period + 1) return 0;
+  const current = prices[prices.length - 1];
+  const past = prices[prices.length - 1 - period];
+  return (current - past) / past;
+}
+
+// =============================================================================
+// TRADING STRATEGIES
+// =============================================================================
+function evaluateStrategies() {
+  if (!botRunning) return;
+
+  const totalValue = getPortfolioValue();
+  const signals = []; // { asset, action, strategy, strength, reason }
+
+  for (const asset of ASSETS) {
+    const history = priceHistory[asset] || [];
+    if (history.length < MIN_HISTORY) continue;
+
+    const price = currentPrices[asset];
+    if (!price) continue;
+
+    const symbol = SYMBOLS[asset];
+    const hasPosition = positions.some(p => p.asset === asset);
+
+    // --- RSI Strategy ---
+    const rsi = calcRSI(history);
+    if (rsi < RSI_OVERSOLD && !hasPosition) {
+      signals.push({
+        asset, action: 'BUY', strategy: 'RSI',
+        strength: (RSI_OVERSOLD - rsi) / RSI_OVERSOLD,
+        reason: `RSI ${rsi.toFixed(1)} (oversold < ${RSI_OVERSOLD})`
+      });
+    } else if (rsi > RSI_OVERBOUGHT && hasPosition) {
+      signals.push({
+        asset, action: 'SELL', strategy: 'RSI',
+        strength: (rsi - RSI_OVERBOUGHT) / (100 - RSI_OVERBOUGHT),
+        reason: `RSI ${rsi.toFixed(1)} (overbought > ${RSI_OVERBOUGHT})`
+      });
+    }
+
+    // --- Moving Average Crossover ---
+    const maShort = calcMA(history, MA_SHORT);
+    const maLong = calcMA(history, MA_LONG);
+    if (maShort !== null && maLong !== null) {
+      const prevHistory = history.slice(0, -1);
+      const prevShort = calcMA(prevHistory, MA_SHORT);
+      const prevLong = calcMA(prevHistory, MA_LONG);
+
+      if (prevShort !== null && prevLong !== null) {
+        // Golden cross: short MA crosses above long MA
+        if (prevShort <= prevLong && maShort > maLong && !hasPosition) {
+          const crossStrength = (maShort - maLong) / maLong;
+          signals.push({
+            asset, action: 'BUY', strategy: 'MA',
+            strength: Math.min(crossStrength * 20, 1),
+            reason: `MA${MA_SHORT} crossed above MA${MA_LONG}`
+          });
+        }
+        // Death cross: short MA crosses below long MA
+        if (prevShort >= prevLong && maShort < maLong && hasPosition) {
+          signals.push({
+            asset, action: 'SELL', strategy: 'MA',
+            strength: Math.min(Math.abs(maShort - maLong) / maLong * 20, 1),
+            reason: `MA${MA_SHORT} crossed below MA${MA_LONG}`
+          });
+        }
+      }
+    }
+
+    // --- Momentum / Breakout ---
+    const momentum = calcMomentum(history);
+    if (momentum > MOMENTUM_THRESHOLD && !hasPosition) {
+      signals.push({
+        asset, action: 'BUY', strategy: 'Momentum',
+        strength: Math.min(momentum / (MOMENTUM_THRESHOLD * 3), 1),
+        reason: `Momentum +${(momentum * 100).toFixed(1)}% (>${(MOMENTUM_THRESHOLD * 100)}% threshold)`
+      });
+    }
+  }
+
+  // --- Stop Loss & Take Profit checks ---
+  for (const pos of [...positions]) {
+    const price = currentPrices[pos.asset];
+    if (!price) continue;
+    const pnlPct = (price - pos.entryPrice) / pos.entryPrice;
+
+    if (pnlPct <= STOP_LOSS_PCT) {
+      executeSell(pos, price, 'StopLoss', `Stop-loss triggered at ${(pnlPct*100).toFixed(1)}%`);
+    } else if (pnlPct >= TAKE_PROFIT_PCT) {
+      executeSell(pos, price, 'TakeProfit', `Take-profit triggered at +${(pnlPct*100).toFixed(1)}%`);
+    }
+  }
+
+  // Sort signals by strength (strongest first) and execute
+  signals.sort((a, b) => b.strength - a.strength);
+
+  for (const signal of signals) {
+    if (signal.action === 'BUY') {
+      const maxInvestment = totalValue * MAX_POSITION_PCT;
+      const investAmount = Math.min(maxInvestment, cash * 0.9); // Keep 10% cash buffer
+      if (investAmount < 10) continue; // Don't trade tiny amounts
+
+      const alreadyHas = positions.some(p => p.asset === signal.asset);
+      if (alreadyHas) continue;
+
+      // Don't over-invest: max 4 positions at a time
+      if (positions.length >= 4) continue;
+
+      executeBuy(signal.asset, investAmount, signal.strategy, signal.reason);
+    } else if (signal.action === 'SELL') {
+      const pos = positions.find(p => p.asset === signal.asset);
+      if (pos) {
+        const price = currentPrices[pos.asset];
+        executeSell(pos, price, signal.strategy, signal.reason);
+      }
+    }
+  }
+}
+
+function executeBuy(asset, amount, strategy, reason) {
+  const price = currentPrices[asset];
+  if (!price || amount <= 0 || amount > cash) return;
+
+  const qty = amount / price;
+  cash -= amount;
+
+  const pos = {
+    id: ++tradeIdCounter,
+    asset,
+    symbol: SYMBOLS[asset],
+    qty,
+    entryPrice: price,
+    strategy,
+    timestamp: new Date()
+  };
+  positions.push(pos);
+
+  tradeLog.unshift({
+    id: pos.id,
+    type: 'BUY',
+    asset,
+    symbol: SYMBOLS[asset],
+    price,
+    qty,
+    value: amount,
+    pnl: null,
+    strategy,
+    reason,
+    timestamp: new Date()
+  });
+
+  console.log(`[BUY] ${SYMBOLS[asset]} | $${amount.toFixed(2)} @ $${price.toFixed(2)} | ${strategy}: ${reason}`);
+}
+
+function executeSell(pos, price, strategy, reason) {
+  const value = pos.qty * price;
+  const cost = pos.qty * pos.entryPrice;
+  const pnl = value - cost;
+
+  cash += value;
+  positions = positions.filter(p => p.id !== pos.id);
+
+  // Update strategy stats
+  if (strategyStats[strategy]) {
+    strategyStats[strategy].trades++;
+    strategyStats[strategy].totalPnl += pnl;
+    if (pnl > 0) strategyStats[strategy].wins++;
+  }
+  // Also credit the entry strategy
+  const entryStrat = pos.strategy;
+  if (entryStrat && strategyStats[entryStrat] && entryStrat !== strategy) {
+    strategyStats[entryStrat].trades++;
+    strategyStats[entryStrat].totalPnl += pnl;
+    if (pnl > 0) strategyStats[entryStrat].wins++;
+  }
+
+  tradeLog.unshift({
+    id: ++tradeIdCounter,
+    type: 'SELL',
+    asset: pos.asset,
+    symbol: pos.symbol,
+    price,
+    qty: pos.qty,
+    value,
+    pnl,
+    strategy,
+    reason,
+    timestamp: new Date()
+  });
+
+  console.log(`[SELL] ${pos.symbol} | $${value.toFixed(2)} @ $${price.toFixed(2)} | PnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} | ${strategy}: ${reason}`);
+}
+
+// =============================================================================
+// PORTFOLIO CALCULATIONS
+// =============================================================================
+function getPortfolioValue() {
+  let invested = 0;
+  for (const pos of positions) {
+    const price = currentPrices[pos.asset] || pos.entryPrice;
+    invested += pos.qty * price;
+  }
+  return cash + invested;
+}
+
+function getInvestedValue() {
+  let invested = 0;
+  for (const pos of positions) {
+    const price = currentPrices[pos.asset] || pos.entryPrice;
+    invested += pos.qty * price;
+  }
+  return invested;
+}
+
+// =============================================================================
+// UI UPDATES
+// =============================================================================
+function updateTickerUI(data) {
+  const grid = document.getElementById('tickerGrid');
+  grid.innerHTML = '';
+
+  for (const asset of ASSETS) {
+    if (!data[asset]) continue;
+    const price = data[asset].usd;
+    const change24h = data[asset].usd_24h_change || 0;
+    const volume = data[asset].usd_24h_vol || 0;
+    const symbol = SYMBOLS[asset];
+    const isUp = change24h >= 0;
+    const prevPrice = lastPrices[asset] || price;
+    const flashClass = price > prevPrice ? 'flash-green' : price < prevPrice ? 'flash-red' : '';
+
+    // Determine if any strategy has a signal on this asset
+    const history = priceHistory[asset] || [];
+    let signalHtml = '';
+    if (history.length >= MIN_HISTORY) {
+      const rsi = calcRSI(history);
+      if (rsi < RSI_OVERSOLD) signalHtml = `<span class="signal-dot" style="background:var(--purple)"></span>RSI Buy`;
+      else if (rsi > RSI_OVERBOUGHT) signalHtml = `<span class="signal-dot" style="background:var(--red)"></span>RSI Sell`;
+
+      const mom = calcMomentum(history);
+      if (mom > MOMENTUM_THRESHOLD) signalHtml = `<span class="signal-dot" style="background:var(--orange)"></span>Momentum`;
+    }
+
+    const item = document.createElement('div');
+    item.className = `ticker-item ${flashClass}`;
+    item.innerHTML = `
+      <div class="ticker-top">
+        <span class="ticker-symbol">${symbol}</span>
+        ${signalHtml ? `<span class="ticker-badge" style="font-size:9px;color:var(--text-secondary)">${signalHtml}</span>` : ''}
+      </div>
+      <div class="ticker-price">$${formatPrice(price)}</div>
+      <div class="ticker-change" style="color:${isUp ? 'var(--green)' : 'var(--red)'}">
+        ${isUp ? '▲' : '▼'} ${Math.abs(change24h).toFixed(2)}%
+      </div>
+      <div class="ticker-volume">Vol: $${abbreviateNum(volume)}</div>
+    `;
+    grid.appendChild(item);
+  }
+}
+
+function updatePortfolioUI() {
+  const totalValue = getPortfolioValue();
+  const invested = getInvestedValue();
+  const pnl = totalValue - STARTING_BALANCE;
+  const pnlPct = ((totalValue - STARTING_BALANCE) / STARTING_BALANCE) * 100;
+  const isUp = pnl >= 0;
+
+  // Portfolio value
+  document.getElementById('portfolioValue').textContent = `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  document.getElementById('portfolioValue').style.color = isUp ? 'var(--green)' : 'var(--red)';
+
+  // Change
+  const changeEl = document.getElementById('portfolioChange');
+  changeEl.textContent = `${isUp ? '+' : ''}$${pnl.toFixed(2)} (${isUp ? '+' : ''}${pnlPct.toFixed(2)}%)`;
+  changeEl.style.color = isUp ? 'var(--green)' : 'var(--red)';
+
+  // Meta
+  document.getElementById('cashValue').textContent = `$${cash.toFixed(2)}`;
+  document.getElementById('investedValue').textContent = `$${invested.toFixed(2)}`;
+  document.getElementById('totalTrades').textContent = tradeLog.length;
+
+  const sells = tradeLog.filter(t => t.type === 'SELL' && t.pnl !== null);
+  if (sells.length > 0) {
+    const wins = sells.filter(t => t.pnl > 0).length;
+    document.getElementById('winRate').textContent = `${((wins / sells.length) * 100).toFixed(0)}%`;
+    document.getElementById('winRate').style.color = wins / sells.length >= 0.5 ? 'var(--green)' : 'var(--red)';
+  }
+
+  // Progress bar
+  const progressPct = Math.min((totalValue / GOAL) * 100, 100);
+  document.getElementById('progressPct').textContent = `${progressPct.toFixed(1)}%`;
+  document.getElementById('progressFill').style.width = `${Math.max(progressPct, 0.5)}%`;
+  const remaining = Math.max(GOAL - totalValue, 0);
+  document.getElementById('progressText').textContent = remaining > 0
+    ? `$${remaining.toLocaleString('en-US', { minimumFractionDigits: 2 })} to go`
+    : 'GOAL REACHED!';
+
+  // Chart
+  portfolioHistory.push({ time: new Date(), value: totalValue });
+  if (portfolioHistory.length > 500) portfolioHistory.shift();
+
+  chart.data.labels = portfolioHistory.map(p => formatTime(p.time));
+  chart.data.datasets[0].data = portfolioHistory.map(p => p.value);
+  chart.data.datasets[1].data = portfolioHistory.map(() => GOAL);
+
+  // Color the line based on performance
+  chart.data.datasets[0].borderColor = isUp ? '#22c55e' : '#ef4444';
+  chart.data.datasets[0].backgroundColor = isUp ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+  chart.update('none');
+}
+
+function updatePositionsUI() {
+  const container = document.getElementById('positionsList');
+  document.getElementById('positionCount').textContent = positions.length;
+
+  if (positions.length === 0) {
+    container.innerHTML = '<div class="no-positions">No open positions</div>';
+    return;
+  }
+
+  let html = '';
+  for (const pos of positions) {
+    const price = currentPrices[pos.asset] || pos.entryPrice;
+    const value = pos.qty * price;
+    const pnl = value - (pos.qty * pos.entryPrice);
+    const pnlPct = ((price - pos.entryPrice) / pos.entryPrice) * 100;
+    const isUp = pnl >= 0;
+
+    html += `
+      <div class="position-item">
+        <div class="position-top">
+          <span class="position-symbol">${pos.symbol}</span>
+          <span class="position-pnl" style="color:${isUp ? 'var(--green)' : 'var(--red)'}">
+            ${isUp ? '+' : ''}$${pnl.toFixed(2)} (${isUp ? '+' : ''}${pnlPct.toFixed(1)}%)
+          </span>
+        </div>
+        <div class="position-details">
+          <span>Qty: ${pos.qty.toFixed(6)}</span>
+          <span>Entry: $${formatPrice(pos.entryPrice)}</span>
+          <span>Now: $${formatPrice(price)}</span>
+        </div>
+        <div class="position-details">
+          <span>Value: $${value.toFixed(2)}</span>
+          <span>SL: $${(pos.entryPrice * (1 + STOP_LOSS_PCT)).toFixed(2)}</span>
+          <span>TP: $${(pos.entryPrice * (1 + TAKE_PROFIT_PCT)).toFixed(2)}</span>
+        </div>
+        <div class="position-strategy">
+          <span class="strategy-tag strategy-${pos.strategy.toLowerCase()}">${pos.strategy}</span>
+          ${formatTime(pos.timestamp)}
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function updateTradeLogUI() {
+  const container = document.getElementById('tradeLogBody');
+  document.getElementById('logCount').textContent = `${tradeLog.length} trades`;
+
+  if (tradeLog.length === 0) {
+    container.innerHTML = '<div class="no-trades">No trades yet — start the bot to begin</div>';
+    return;
+  }
+
+  let html = `<table class="log-table">
+    <thead><tr>
+      <th>Time</th><th>Type</th><th>Asset</th><th>Price</th>
+      <th>Qty</th><th>Value</th><th>P&L</th><th>Strategy</th>
+    </tr></thead><tbody>`;
+
+  // Show last 50 trades
+  const recent = tradeLog.slice(0, 50);
+  for (const t of recent) {
+    const stratClass = t.strategy.toLowerCase().replace(/\s/g, '');
+    html += `<tr>
+      <td>${formatTime(t.timestamp)}</td>
+      <td class="trade-${t.type.toLowerCase()}">${t.type}</td>
+      <td>${t.symbol}</td>
+      <td>$${formatPrice(t.price)}</td>
+      <td>${t.qty.toFixed(6)}</td>
+      <td>$${t.value.toFixed(2)}</td>
+      <td style="color:${t.pnl === null ? 'var(--text-muted)' : t.pnl >= 0 ? 'var(--green)' : 'var(--red)'}">
+        ${t.pnl === null ? '—' : `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}`}
+      </td>
+      <td><span class="strategy-tag strategy-${stratClass}">${t.strategy}</span></td>
+    </tr>`;
+  }
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function updateStrategyUI() {
+  const container = document.getElementById('strategyStats');
+  const strategies = [
+    { key: 'RSI', name: 'RSI', color: 'var(--purple)', desc: `Buy <${RSI_OVERSOLD} / Sell >${RSI_OVERBOUGHT}` },
+    { key: 'MA', name: 'MA Crossover', color: 'var(--cyan)', desc: `MA${MA_SHORT} × MA${MA_LONG}` },
+    { key: 'Momentum', name: 'Momentum', color: 'var(--orange)', desc: `>${(MOMENTUM_THRESHOLD*100)}% breakout` },
+    { key: 'StopLoss', name: 'Stop-Loss', color: 'var(--red)', desc: `Auto-sell at ${(STOP_LOSS_PCT*100)}%` },
+    { key: 'TakeProfit', name: 'Take-Profit', color: 'var(--green)', desc: `Auto-sell at +${(TAKE_PROFIT_PCT*100)}%` },
+  ];
+
+  let html = '';
+  for (const s of strategies) {
+    const stats = strategyStats[s.key];
+    const winRate = stats.trades > 0 ? ((stats.wins / stats.trades) * 100).toFixed(0) + '%' : '—';
+    const pnlColor = stats.totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+    html += `
+      <div class="strategy-item">
+        <div>
+          <div class="strategy-name" style="color:${s.color}">${s.name}</div>
+          <div class="strategy-info">${s.desc}</div>
+        </div>
+        <div class="strategy-stats">
+          <div class="strategy-trades">${stats.trades} trades</div>
+          <div class="strategy-winrate">
+            WR: ${winRate} |
+            <span style="color:${pnlColor}">${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function updateAllUI() {
+  updatePortfolioUI();
+  updatePositionsUI();
+  updateTradeLogUI();
+  updateStrategyUI();
+}
+
+// =============================================================================
+// BOT CONTROL
+// =============================================================================
+async function tick() {
+  const ok = await fetchPrices();
+  if (ok && botRunning) {
+    evaluateStrategies();
+  }
+  updateAllUI();
+}
+
+function toggleBot() {
+  botRunning = !botRunning;
+  const btn = document.getElementById('toggleBtn');
+  const badge = document.getElementById('statusBadge');
+
+  if (botRunning) {
+    btn.textContent = '⏸ PAUSE';
+    btn.className = 'btn btn-red';
+    badge.textContent = 'RUNNING';
+    badge.className = 'status-badge status-running';
+    startLoop();
+  } else {
+    btn.textContent = '▶ START';
+    btn.className = 'btn btn-green';
+    badge.textContent = 'PAUSED';
+    badge.className = 'status-badge status-paused';
+    stopLoop();
+  }
+}
+
+function startLoop() {
+  stopLoop();
+  tick(); // Run immediately
+  const interval = parseInt(document.getElementById('refreshRate').value);
+  refreshTimer = setInterval(tick, interval);
+}
+
+function stopLoop() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
+function resetBot() {
+  if (!confirm('Reset all trades and start over with $1,000?')) return;
+  botRunning = false;
+  stopLoop();
+  cash = STARTING_BALANCE;
+  positions = [];
+  tradeLog = [];
+  priceHistory = {};
+  currentPrices = {};
+  lastPrices = {};
+  portfolioHistory = [{ time: new Date(), value: STARTING_BALANCE }];
+  tradeIdCounter = 0;
+  apiErrors = 0;
+  for (const key in strategyStats) {
+    strategyStats[key] = { trades: 0, wins: 0, totalPnl: 0 };
+  }
+
+  chart.data.labels = [formatTime(new Date())];
+  chart.data.datasets[0].data = [STARTING_BALANCE];
+  chart.data.datasets[1].data = [GOAL];
+  chart.update();
+
+  const btn = document.getElementById('toggleBtn');
+  btn.textContent = '▶ START';
+  btn.className = 'btn btn-green';
+  document.getElementById('statusBadge').textContent = 'PAUSED';
+  document.getElementById('statusBadge').className = 'status-badge status-paused';
+
+  updateAllUI();
+}
+
+// Refresh rate change
+document.getElementById('refreshRate').addEventListener('change', () => {
+  if (botRunning) startLoop(); // Restart loop with new interval
+});
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+function formatPrice(price) {
+  if (price >= 1000) return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (price >= 1) return price.toFixed(2);
+  if (price >= 0.01) return price.toFixed(4);
+  return price.toFixed(6);
+}
+
+function formatTime(date) {
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
+
+function abbreviateNum(num) {
+  if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+  if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+  if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+  return num.toFixed(0);
+}
+
+// =============================================================================
+// INITIAL LOAD
+// =============================================================================
+(async function init() {
+  updateAllUI();
+  // Fetch prices once on load so the ticker isn't empty
+  await fetchPrices();
+  updateAllUI();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collin & Zog Wealth Management LLC — Paper Trading Terminal v4</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#06090f;--bg1:#0c1220;--bg2:#131c2e;--bg3:#1a2540;--bg4:#213050;
+  --border:#1e2d45;--border-light:#2a3f5f;
+  --text:#e8edf5;--text2:#94a3b8;--text3:#5a6a84;
+  --green:#10b981;--green-bg:rgba(16,185,129,.12);--green-dim:#065f46;
+  --red:#f43f5e;--red-bg:rgba(244,63,94,.12);--red-dim:#881337;
+  --blue:#3b82f6;--blue-bg:rgba(59,130,246,.12);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,.12);
+  --cyan:#22d3ee;--cyan-bg:rgba(34,211,238,.12);
+  --orange:#fb923c;--orange-bg:rgba(251,146,60,.12);
+  --yellow:#facc15;--yellow-bg:rgba(250,204,21,.12);
+  --gold:#d4a017;--gold-bg:rgba(212,160,23,.12);
+  --pink:#ec4899;--pink-bg:rgba(236,72,153,.12);
+}
+body{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;background:var(--bg0);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+.header{background:linear-gradient(180deg,#0f1728,var(--bg1));border-bottom:1px solid var(--border);padding:0;position:sticky;top:0;z-index:100}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;flex-wrap:wrap;gap:8px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:-.5px}
+.brand-logo .llc{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:1px;display:block;margin-top:-2px}
+.brand-divider{width:1px;height:28px;background:var(--border)}
+.brand-product{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px}
+.hdr-ctrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-run{background:var(--green-bg);color:var(--green)}
+.badge-pause{background:var(--red-bg);color:var(--red)}
+.btn{padding:5px 14px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:11px;cursor:pointer;transition:.12s}
+.btn:hover{background:var(--bg4);border-color:var(--border-light)}
+.btn-go{border-color:var(--green-dim);background:var(--green-dim);color:var(--green)}
+.btn-go:hover{background:#047857}
+.btn-stop{border-color:var(--red-dim);background:var(--red-dim);color:var(--red)}
+.btn-stop:hover{background:#9f1239}
+.sel{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-family:inherit;font-size:10px;cursor:pointer}
+.hdr-label{font-size:10px;color:var(--text3)}
+.hdr-status{display:flex;align-items:center;gap:16px;padding:4px 20px 6px;font-size:10px;color:var(--text3);border-top:1px solid rgba(30,45,69,.5)}
+.hdr-status span{display:flex;align-items:center;gap:4px}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+
+.tabs{display:flex;gap:0;padding:0 20px;background:var(--bg1);border-bottom:1px solid var(--border)}
+.tab{padding:8px 18px;font-size:11px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;font-family:inherit;background:none;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:var(--text2)}.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+.dashboard{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px 14px;max-width:1700px;margin:0 auto}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.card-h{padding:8px 12px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:flex;align-items:center;justify-content:space-between}
+.card-b{padding:12px}
+
+.hero{grid-column:1/-1}
+.hero-inner{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:20px}
+.port-val{font-size:44px;font-weight:800;line-height:1}
+.port-chg{font-size:14px;margin-top:4px}
+.port-meta{display:flex;gap:20px;margin-top:10px;flex-wrap:wrap}
+.pm{display:flex;flex-direction:column;gap:1px}
+.pm-l{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.pm-v{font-size:13px;font-weight:700}
+.prog-sec{flex:1;min-width:240px;max-width:480px}
+.prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:4px}
+.prog-bar{height:18px;background:var(--bg0);border-radius:9px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));border-radius:9px;transition:width .5s}
+.prog-txt{font-size:10px;color:var(--text3);margin-top:3px;text-align:center}
+
+.ticker-wrap{grid-column:1/-1}
+.tkr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:6px}
+.tkr{background:var(--bg1);border:1px solid var(--border);border-radius:5px;padding:8px 10px;transition:.12s}
+.tkr:hover{border-color:var(--text3)}
+.tkr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.tkr-sym{font-size:12px;font-weight:800}
+.tkr-type{font-size:8px;padding:2px 5px;border-radius:3px;font-weight:700;text-transform:uppercase}
+.tkr-price{font-size:15px;font-weight:700}
+.tkr-chg{font-size:10px}
+.tkr-signal{font-size:9px;color:var(--text3);margin-top:2px}
+.sig-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px}
+
+.chart-card{grid-column:1/3;min-height:280px}
+.chart-card .card-b{padding:6px;height:260px}
+
+.pos-card{grid-column:3/4;grid-row:3/5;max-height:600px;overflow-y:auto}
+.pos{padding:8px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:3px}
+.pos:last-child{border-bottom:none}
+.pos-top{display:flex;justify-content:space-between;align-items:center}
+.pos-sym{font-weight:800;font-size:12px}
+.pos-pnl{font-size:12px;font-weight:700}
+.pos-det{display:flex;justify-content:space-between;font-size:10px;color:var(--text2)}
+.pos-strat{font-size:9px;color:var(--text3)}
+.empty{color:var(--text3);font-size:11px;text-align:center;padding:24px 0}
+
+.opt-badge{font-size:8px;padding:1px 5px;border-radius:3px;font-weight:800;margin-left:4px}
+.opt-call{background:var(--green-bg);color:var(--green)}
+.opt-put{background:var(--red-bg);color:var(--red)}
+.opt-stock{background:var(--blue-bg);color:var(--blue)}
+
+.log-card{grid-column:1/3;max-height:400px}
+.log-card .card-b{padding:0;max-height:350px;overflow-y:auto}
+table.tlog{width:100%;border-collapse:collapse;font-size:10px}
+.tlog th{position:sticky;top:0;background:var(--bg2);padding:6px 8px;text-align:left;color:var(--text3);font-weight:700;text-transform:uppercase;font-size:9px;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.tlog td{padding:5px 8px;border-bottom:1px solid rgba(30,45,69,.4);white-space:nowrap}
+.tlog tr:hover td{background:var(--bg1)}
+.c-buy{color:var(--green)}.c-sell{color:var(--red)}
+.stag{font-size:8px;padding:2px 5px;border-radius:3px;font-weight:700;text-transform:uppercase}
+.stag-rsi{background:var(--purple-bg);color:var(--purple)}
+.stag-ma{background:var(--cyan-bg);color:var(--cyan)}
+.stag-momentum{background:var(--orange-bg);color:var(--orange)}
+.stag-meanrev{background:var(--yellow-bg);color:var(--yellow)}
+.stag-vwap{background:var(--blue-bg);color:var(--blue)}
+.stag-stoploss{background:var(--red-bg);color:var(--red)}
+.stag-takeprofit{background:var(--green-bg);color:var(--green)}
+.stag-trailstop{background:rgba(251,146,60,.15);color:#f59e0b}
+.stag-composite{background:var(--gold-bg);color:var(--gold)}
+.stag-optcall{background:var(--green-bg);color:var(--green)}
+.stag-optput{background:var(--red-bg);color:var(--red)}
+.stag-optexpiry{background:var(--pink-bg);color:var(--pink)}
+.stag-gamma{background:var(--purple-bg);color:var(--purple)}
+.stag-straddle{background:var(--cyan-bg);color:var(--cyan)}
+
+.strat-card{grid-column:3/4}
+.strat-item{padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.strat-item:last-child{border-bottom:none}
+.strat-name{font-size:11px;font-weight:700}
+.strat-desc{font-size:9px;color:var(--text3)}
+.strat-right{text-align:right}
+.strat-trades{font-size:10px}
+.strat-wr{font-size:9px;color:var(--text3)}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+@media(max-width:1100px){
+  .dashboard{grid-template-columns:1fr 1fr}
+  .hero,.ticker-wrap,.chart-card,.log-card,.pos-card,.strat-card{grid-column:1/-1;grid-row:auto}
+}
+@media(max-width:640px){
+  .dashboard{grid-template-columns:1fr;padding:6px;gap:6px}
+  .port-val{font-size:28px}.header-top{padding:8px 10px}
+  .hero-inner{flex-direction:column}.prog-sec{max-width:none}
+  .tabs{overflow-x:auto;padding:0 10px}
+  .tkr-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+}
+@keyframes fg{0%,100%{background:transparent}50%{background:rgba(16,185,129,.08)}}
+@keyframes fr{0%,100%{background:transparent}50%{background:rgba(244,63,94,.08)}}
+.fg{animation:fg .5s}.fr{animation:fr .5s}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-logo">&#10017; &#10017; &#10017; COLLIN &amp; ZOG &#10017; &#10017; &#10017;<span class="llc">&#10017; WEALTH MANAGEMENT LLC &#10017;</span></div>
+      <div class="brand-divider"></div>
+      <div class="brand-product">&#10017; Options &amp; Equities Terminal v4 &#10017;</div>
+    </div>
+    <div class="hdr-ctrl">
+      <div id="statusBadge" class="badge badge-pause">PAUSED</div>
+      <div><span class="hdr-label">Refresh</span>
+        <select id="refreshRate" class="sel">
+          <option value="6000">6s</option>
+          <option value="10000" selected>10s</option>
+          <option value="15000">15s</option>
+        </select>
+      </div>
+      <div><span class="hdr-label">Risk</span>
+        <select id="riskLevel" class="sel">
+          <option value="moderate">Moderate</option>
+          <option value="aggressive">Aggressive</option>
+          <option value="yolo" selected>YOLO</option>
+        </select>
+      </div>
+      <button id="toggleBtn" class="btn btn-go" onclick="toggleBot()">&#9654; START</button>
+      <button class="btn" onclick="resetBot()">&#8634; RESET</button>
+    </div>
+  </div>
+  <div class="hdr-status">
+    <span><span class="dot" id="dotCrypto" style="background:var(--text3)"></span> Crypto API</span>
+    <span><span class="dot" id="dotStocks" style="background:var(--text3)"></span> Stock Sim</span>
+    <span><span class="dot" id="dotOptions" style="background:var(--text3)"></span> Options Engine</span>
+    <span id="lastUpdate">Waiting for data...</span>
+    <span style="margin-left:auto" id="clockDisplay"></span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('all')">All Assets</button>
+  <button class="tab" onclick="switchTab('crypto')">Crypto</button>
+  <button class="tab" onclick="switchTab('stocks')">Stocks</button>
+  <button class="tab" onclick="switchTab('options')">Options Book</button>
+</div>
+
+<div class="dashboard">
+  <div class="card hero"><div class="card-b"><div class="hero-inner">
+    <div>
+      <div class="port-val" id="portfolioValue">$1,000.00</div>
+      <div class="port-chg" id="portfolioChange">+$0.00 (0.00%)</div>
+      <div class="port-meta">
+        <div class="pm"><span class="pm-l">Cash</span><span class="pm-v" id="cashVal">$1,000.00</span></div>
+        <div class="pm"><span class="pm-l">Stocks</span><span class="pm-v" id="stockVal">$0.00</span></div>
+        <div class="pm"><span class="pm-l">Options</span><span class="pm-v" id="optVal">$0.00</span></div>
+        <div class="pm"><span class="pm-l">Trades</span><span class="pm-v" id="totalTrades">0</span></div>
+        <div class="pm"><span class="pm-l">Win Rate</span><span class="pm-v" id="winRate">&mdash;</span></div>
+        <div class="pm"><span class="pm-l">Best Trade</span><span class="pm-v" id="bestTrade">&mdash;</span></div>
+        <div class="pm"><span class="pm-l">Drawdown</span><span class="pm-v" id="maxDD">&mdash;</span></div>
+        <div class="pm"><span class="pm-l">Leverage</span><span class="pm-v" id="leverage">1.0x</span></div>
+      </div>
+    </div>
+    <div class="prog-sec">
+      <div class="prog-lbl"><span>$1K &rarr; $100K Challenge</span><span id="progPct">1.0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:1%"></div></div>
+      <div class="prog-txt" id="progTxt">$99,000.00 to go</div>
+    </div>
+  </div></div></div>
+
+  <div class="card ticker-wrap">
+    <div class="card-h">Live Prices <span id="assetCount"></span></div>
+    <div class="card-b"><div class="tkr-grid" id="tickerGrid"></div></div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="card-h">Portfolio Value Over Time</div>
+    <div class="card-b"><canvas id="portfolioChart"></canvas></div>
+  </div>
+
+  <div class="card pos-card">
+    <div class="card-h">Open Positions <span id="posCount">0</span></div>
+    <div class="card-b" id="posList"><div class="empty">No open positions</div></div>
+  </div>
+
+  <div class="card log-card">
+    <div class="card-h">Trade Log <span id="logCount">0 trades</span></div>
+    <div class="card-b" id="logBody"><div class="empty">No trades yet &mdash; press START</div></div>
+  </div>
+
+  <div class="card strat-card">
+    <div class="card-h">Strategy Performance</div>
+    <div class="card-b" id="stratBody"></div>
+  </div>
+</div>
+
+<script>
+// =============================================================================
+// ASSETS
+// =============================================================================
+const CRYPTO = [
+  {id:'bitcoin',sym:'BTC',name:'Bitcoin',type:'crypto',bn:'BTCUSDT'},
+  {id:'ethereum',sym:'ETH',name:'Ethereum',type:'crypto',bn:'ETHUSDT'},
+  {id:'solana',sym:'SOL',name:'Solana',type:'crypto',bn:'SOLUSDT'},
+  {id:'cardano',sym:'ADA',name:'Cardano',type:'crypto',bn:'ADAUSDT'},
+  {id:'avalanche-2',sym:'AVAX',name:'Avalanche',type:'crypto',bn:'AVAXUSDT'},
+  {id:'chainlink',sym:'LINK',name:'Chainlink',type:'crypto',bn:'LINKUSDT'},
+  {id:'polkadot',sym:'DOT',name:'Polkadot',type:'crypto',bn:'DOTUSDT'},
+];
+const STOCKS = [
+  {id:'AAPL',sym:'AAPL',name:'Apple',type:'stock',seed:195,vol:.015,drift:.0003},
+  {id:'MSFT',sym:'MSFT',name:'Microsoft',type:'stock',seed:420,vol:.014,drift:.0003},
+  {id:'NVDA',sym:'NVDA',name:'NVIDIA',type:'stock',seed:880,vol:.028,drift:.0004},
+  {id:'GOOGL',sym:'GOOGL',name:'Alphabet',type:'stock',seed:175,vol:.016,drift:.0002},
+  {id:'AMZN',sym:'AMZN',name:'Amazon',type:'stock',seed:200,vol:.018,drift:.0003},
+  {id:'TSLA',sym:'TSLA',name:'Tesla',type:'stock',seed:250,vol:.035,drift:.0002},
+  {id:'META',sym:'META',name:'Meta',type:'stock',seed:560,vol:.022,drift:.0003},
+  {id:'SPY',sym:'SPY',name:'S&P 500 ETF',type:'etf',seed:530,vol:.009,drift:.00015},
+  {id:'QQQ',sym:'QQQ',name:'Nasdaq ETF',type:'etf',seed:480,vol:.012,drift:.0002},
+  {id:'GLD',sym:'GLD',name:'Gold ETF',type:'commodity',seed:215,vol:.008,drift:.0001},
+  {id:'USO',sym:'USO',name:'Oil ETF',type:'commodity',seed:78,vol:.02,drift:0},
+];
+const ALL_ASSETS = [...CRYPTO, ...STOCKS];
+
+// =============================================================================
+// CONFIG
+// =============================================================================
+const STARTING = 1000;
+const GOAL = 100000;
+const MIN_HIST = 5; // Ultra-fast start
+
+const RISK = {
+  moderate:   {maxPosPct:.30,maxPos:8,sl:-.06,tp:.20,trail:.04,rsiLo:38,rsiHi:62,momTh:.012,optPct:.25,optMaxPos:6},
+  aggressive: {maxPosPct:.45,maxPos:14,sl:-.10,tp:.35,trail:.06,rsiLo:42,rsiHi:58,momTh:.008,optPct:.35,optMaxPos:10},
+  yolo:       {maxPosPct:.60,maxPos:20,sl:-.15,tp:.50,trail:.10,rsiLo:48,rsiHi:52,momTh:.004,optPct:.50,optMaxPos:15},
+};
+
+const MA_S=4, MA_L=12, MOM_P=8, MR_TH=0.8, VWAP_P=10;
+
+// =============================================================================
+// STATE
+// =============================================================================
+let running=false, cash=STARTING, positions=[], tradeLog=[], priceHistory={}, curPrices={},
+    priceChg={}, lastPrices={}, portHistory=[{time:new Date(),value:STARTING}],
+    tidCtr=0, timer=null, apiErr=0, peak=STARTING, maxDD=0, bestTr=0, activeTab='all',
+    stockSim={}, tickCount=0;
+
+const STRAT_KEYS=['RSI','MA','Momentum','MeanRev','VWAP','Composite','OptCall','OptPut','Gamma','Straddle','StopLoss','TakeProfit','TrailStop','OptExpiry'];
+let stats={}; STRAT_KEYS.forEach(s=>stats[s]={trades:0,wins:0,pnl:0});
+
+// =============================================================================
+// BLACK-SCHOLES OPTIONS ENGINE
+// =============================================================================
+// Standard normal CDF approximation
+function normCDF(x){
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const sign=x<0?-1:1; x=Math.abs(x)/Math.SQRT2;
+  const t=1/(1+p*x);
+  const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return 0.5*(1+sign*y);
+}
+
+// Black-Scholes price for European call/put
+// S=spot, K=strike, T=time to expiry (years), r=risk-free rate, sigma=volatility
+function blackScholes(S, K, T, r, sigma, type) {
+  if(T<=0) return Math.max(type==='call'?S-K:K-S, 0); // At expiry, intrinsic only
+  const d1 = (Math.log(S/K) + (r + sigma*sigma/2)*T) / (sigma*Math.sqrt(T));
+  const d2 = d1 - sigma*Math.sqrt(T);
+  if(type==='call') return S*normCDF(d1) - K*Math.exp(-r*T)*normCDF(d2);
+  return K*Math.exp(-r*T)*normCDF(-d2) - S*normCDF(-d1);
+}
+
+// Greeks
+function optionDelta(S,K,T,r,sigma,type){
+  if(T<=0) return type==='call'?(S>K?1:0):(S<K?-1:0);
+  const d1=(Math.log(S/K)+(r+sigma*sigma/2)*T)/(sigma*Math.sqrt(T));
+  return type==='call'?normCDF(d1):normCDF(d1)-1;
+}
+function optionGamma(S,K,T,r,sigma){
+  if(T<=0) return 0;
+  const d1=(Math.log(S/K)+(r+sigma*sigma/2)*T)/(sigma*Math.sqrt(T));
+  return Math.exp(-d1*d1/2)/(Math.sqrt(2*Math.PI)*S*sigma*Math.sqrt(T));
+}
+function optionTheta(S,K,T,r,sigma,type){
+  if(T<=0) return 0;
+  const d1=(Math.log(S/K)+(r+sigma*sigma/2)*T)/(sigma*Math.sqrt(T));
+  const d2=d1-sigma*Math.sqrt(T);
+  const term1=-S*Math.exp(-d1*d1/2)*sigma/(2*Math.sqrt(2*Math.PI*T));
+  if(type==='call') return (term1-r*K*Math.exp(-r*T)*normCDF(d2))/365;
+  return (term1+r*K*Math.exp(-r*T)*normCDF(-d2))/365;
+}
+
+// Implied volatility from recent price history
+function impliedVol(prices){
+  if(prices.length<3)return 0.5;
+  let sumSq=0;
+  for(let i=1;i<prices.length;i++){
+    const ret=Math.log(prices[i]/prices[i-1]);
+    sumSq+=ret*ret;
+  }
+  // Annualize: each tick ~15s, ~2400 ticks/day, ~250 trading days
+  const variance=sumSq/(prices.length-1);
+  return Math.sqrt(variance*2400*250)*1.2; // Scale up for excitement
+}
+
+// =============================================================================
+// PRICE FETCHING
+// =============================================================================
+// Track session-start prices for 24h-style % change display
+let cryptoStartPrices={};
+
+async function fetchCrypto(){
+  // Binance public API — no key needed, 1200 req/min limit (runs for days easily)
+  try{
+    const symbols=CRYPTO.map(a=>a.bn);
+    const query=encodeURIComponent(JSON.stringify(symbols));
+    const r=await fetch(`https://api.binance.com/api/v3/ticker/price?symbols=${query}`);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    // Build lookup: symbol -> price
+    const lookup={};
+    for(const item of data) lookup[item.symbol]=parseFloat(item.price);
+
+    for(const a of CRYPTO){
+      const p=lookup[a.bn];
+      if(!p)continue;
+      lastPrices[a.id]=curPrices[a.id]||p;
+      curPrices[a.id]=p;
+      // Track session % change from first price we saw
+      if(!cryptoStartPrices[a.id])cryptoStartPrices[a.id]=p;
+      priceChg[a.id]=((p-cryptoStartPrices[a.id])/cryptoStartPrices[a.id])*100;
+      if(!priceHistory[a.id])priceHistory[a.id]=[];
+      priceHistory[a.id].push(p);
+      if(priceHistory[a.id].length>300)priceHistory[a.id].shift();
+    }
+    apiErr=0;setDot('dotCrypto',true);
+    return true;
+  }catch(e){
+    apiErr++;
+    console.error('Binance fetch error:',e);
+    setDot('dotCrypto',false);
+    return false;
+  }
+}
+
+function initStockSim(){
+  for(const a of STOCKS){
+    stockSim[a.id]=a.seed; curPrices[a.id]=a.seed;
+    lastPrices[a.id]=a.seed; priceChg[a.id]=0; priceHistory[a.id]=[a.seed];
+  }
+}
+
+function tickStockSim(){
+  for(const a of STOCKS){
+    const prev=stockSim[a.id];
+    const u1=Math.random(),u2=Math.random();
+    const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+    let extra=0;
+    if(Math.random()<0.12) extra=(Math.random()-0.3)*a.vol*5; // Frequent big moves
+    const p=prev*(1+a.drift+a.vol*z+extra);
+    const clamped=Math.max(p,prev*0.88);
+    lastPrices[a.id]=curPrices[a.id]||clamped;
+    stockSim[a.id]=clamped; curPrices[a.id]=clamped;
+    priceChg[a.id]=((clamped-a.seed)/a.seed)*100;
+    if(!priceHistory[a.id])priceHistory[a.id]=[];
+    priceHistory[a.id].push(clamped);
+    if(priceHistory[a.id].length>300)priceHistory[a.id].shift();
+  }
+  setDot('dotStocks',true);
+}
+
+// =============================================================================
+// INDICATORS
+// =============================================================================
+function calcRSI(pr,p=14){if(pr.length<p+1)return 50;const r=pr.slice(-(p+1));let g=0,l=0;for(let i=1;i<r.length;i++){const c=r[i]-r[i-1];if(c>0)g+=c;else l+=Math.abs(c)}g/=p;l/=p;if(l===0)return 100;return 100-100/(1+g/l)}
+function calcMA(pr,p){if(pr.length<p)return null;const s=pr.slice(-p);return s.reduce((a,b)=>a+b,0)/p}
+function calcMom(pr,p=MOM_P){if(pr.length<p+1)return 0;return(pr[pr.length-1]-pr[pr.length-1-p])/pr[pr.length-1-p]}
+function calcZ(pr,p=15){if(pr.length<p)return 0;const s=pr.slice(-p);const m=s.reduce((a,b)=>a+b,0)/p;const std=Math.sqrt(s.reduce((a,v)=>a+(v-m)**2,0)/p);return std===0?0:(pr[pr.length-1]-m)/std}
+function calcVWAP(pr,p=VWAP_P){if(pr.length<p)return null;const s=pr.slice(-p);let pv=0,v=0;for(let i=1;i<s.length;i++){const vol=Math.abs(s[i]-s[i-1])+.001;pv+=s[i]*vol;v+=vol}return v>0?pv/v:s[s.length-1]}
+
+function composite(pr,risk){
+  if(pr.length<MIN_HIST)return{score:0,sigs:[]};
+  const rsi=calcRSI(pr),maS=calcMA(pr,MA_S),maL=calcMA(pr,MA_L),mom=calcMom(pr),z=calcZ(pr),vwap=calcVWAP(pr),price=pr[pr.length-1];
+  let score=0;const sigs=[];
+  if(rsi<risk.rsiLo){score+=(risk.rsiLo-rsi)/risk.rsiLo*.3;sigs.push('RSI'+rsi.toFixed(0))}
+  else if(rsi>risk.rsiHi){score-=(rsi-risk.rsiHi)/(100-risk.rsiHi)*.3;sigs.push('RSI'+rsi.toFixed(0))}
+  if(maS&&maL){if(maS>maL){score+=.25;sigs.push('MA+')}else{score-=.25;sigs.push('MA-')}}
+  if(mom>risk.momTh){score+=.3;sigs.push('Mom+'+(mom*100).toFixed(1)+'%')}
+  else if(mom<-risk.momTh){score-=.2;sigs.push('Mom'+(mom*100).toFixed(1)+'%')}
+  if(z<-MR_TH){score+=.25;sigs.push('MR')}else if(z>MR_TH){score-=.2;sigs.push('MR')}
+  if(vwap){if(price<vwap*.99){score+=.15;sigs.push('<VWAP')}else if(price>vwap*1.01){score-=.1;sigs.push('>VWAP')}}
+  return{score:Math.max(-1,Math.min(1,score)),sigs};
+}
+
+// =============================================================================
+// TRADING ENGINE
+// =============================================================================
+function getRisk(){return RISK[document.getElementById('riskLevel').value]}
+
+function evaluate(){
+  if(!running)return;
+  const risk=getRisk();
+  const tv=getPortValue();
+  const buys=[];
+  tickCount++;
+
+  // Age options — check expiry
+  for(const pos of [...positions]){
+    if(pos.isOption){
+      pos.ticksLeft--;
+      // Update option value with Black-Scholes
+      const S=curPrices[pos.underlying];
+      if(S){
+        const T=Math.max(pos.ticksLeft/2400,0); // Convert ticks to "years" for BS
+        pos.optionPrice=blackScholes(S,pos.strike,T,0.05,pos.iv,pos.optType);
+        pos.delta=optionDelta(S,pos.strike,T,0.05,pos.iv,pos.optType);
+        pos.gamma=optionGamma(S,pos.strike,T,0.05,pos.iv);
+        pos.theta=optionTheta(S,pos.strike,T,0.05,pos.iv,pos.optType);
+      }
+      // Expiry
+      if(pos.ticksLeft<=0){
+        const S=curPrices[pos.underlying]||0;
+        const intrinsic=pos.optType==='call'?Math.max(S-pos.strike,0):Math.max(pos.strike-S,0);
+        const value=intrinsic*pos.contracts*100;
+        const pnl=value-pos.costBasis;
+        cash+=value;
+        positions=positions.filter(p=>p.id!==pos.id);
+        recordSell(pos,intrinsic,pnl,'OptExpiry',`Expired ${intrinsic>0?'ITM':'OTM'} at $${S.toFixed(2)}`);
+        continue;
+      }
+    }
+  }
+
+  for(const asset of ALL_ASSETS){
+    const hist=priceHistory[asset.id]||[];
+    if(hist.length<MIN_HIST)continue;
+    const price=curPrices[asset.id];
+    if(!price)continue;
+    const hasStockPos=positions.some(p=>p.asset===asset.id&&!p.isOption);
+    const hasOptPos=positions.some(p=>p.underlying===asset.id&&p.isOption);
+    const rsi=calcRSI(hist);
+    const maS=calcMA(hist,MA_S),maL=calcMA(hist,MA_L);
+    const prevH=hist.slice(0,-1);
+    const pS=calcMA(prevH,MA_S),pL=calcMA(prevH,MA_L);
+    const mom=calcMom(hist);
+    const z=calcZ(hist);
+    const vwap=calcVWAP(hist);
+    const comp=composite(hist,risk);
+    const iv=impliedVol(hist);
+
+    // ===== STOCK / CRYPTO SIGNALS =====
+    if(rsi<risk.rsiLo&&!hasStockPos)
+      buys.push({asset:asset.id,sym:asset.sym,strat:'RSI',str:(risk.rsiLo-rsi)/risk.rsiLo,reason:`RSI ${rsi.toFixed(0)} oversold`,isOpt:false});
+    else if(rsi>risk.rsiHi&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p)sell(p,price,'RSI',`RSI ${rsi.toFixed(0)} overbought`);}
+
+    if(maS&&maL&&pS&&pL){
+      if(pS<=pL&&maS>maL&&!hasStockPos)buys.push({asset:asset.id,sym:asset.sym,strat:'MA',str:Math.min((maS-maL)/maL*25,1),reason:'Golden cross',isOpt:false});
+      if(pS>=pL&&maS<maL&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p)sell(p,price,'MA','Death cross');}
+    }
+
+    if(mom>risk.momTh&&!hasStockPos)
+      buys.push({asset:asset.id,sym:asset.sym,strat:'Momentum',str:Math.min(mom/(risk.momTh*2),1),reason:`Mom +${(mom*100).toFixed(1)}%`,isOpt:false});
+
+    if(z<-MR_TH&&!hasStockPos)
+      buys.push({asset:asset.id,sym:asset.sym,strat:'MeanRev',str:Math.min(Math.abs(z)/2,1),reason:`Z=${z.toFixed(1)}`,isOpt:false});
+    else if(z>MR_TH&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p)sell(p,price,'MeanRev',`Z=${z.toFixed(1)} reverted`);}
+
+    if(vwap&&price<vwap*.985&&!hasStockPos)
+      buys.push({asset:asset.id,sym:asset.sym,strat:'VWAP',str:Math.min((vwap-price)/price*30,1),reason:`${((1-price/vwap)*100).toFixed(1)}% < VWAP`,isOpt:false});
+
+    if(comp.score>0.15&&!hasStockPos)
+      buys.push({asset:asset.id,sym:asset.sym,strat:'Composite',str:comp.score,reason:`Score ${comp.score.toFixed(2)} [${comp.sigs.join(',')}]`,isOpt:false});
+
+    // ===== OPTIONS SIGNALS =====
+    // Only generate options on stocks/ETFs (not crypto — keeps it somewhat realistic)
+    if(asset.type!=='crypto'&&iv>0){
+      const optCount=positions.filter(p=>p.isOption).length;
+      const T_ticks=120+Math.floor(Math.random()*240); // 120-360 ticks expiry (~30-90 min)
+      const T_years=T_ticks/2400;
+
+      // CALL: Strong bullish signal
+      if(comp.score>0.1&&!hasOptPos&&optCount<risk.optMaxPos){
+        const strike=price*(0.97+Math.random()*0.04); // Slightly ITM to ATM
+        const premium=blackScholes(price,strike,T_years,0.05,iv,'call');
+        if(premium>0.01){
+          buys.push({asset:asset.id,sym:asset.sym,strat:'OptCall',str:comp.score+0.2,
+            reason:`Call $${strike.toFixed(1)} exp ${T_ticks}t | IV ${(iv*100).toFixed(0)}%`,
+            isOpt:true,optType:'call',strike,iv,T_ticks,premium});
+        }
+      }
+
+      // PUT: Strong bearish signal (hedge or directional bet)
+      if(comp.score<-0.1&&!hasOptPos&&optCount<risk.optMaxPos){
+        const strike=price*(1.0+Math.random()*0.04); // ATM to slightly ITM
+        const premium=blackScholes(price,strike,T_years,0.05,iv,'put');
+        if(premium>0.01){
+          buys.push({asset:asset.id,sym:asset.sym,strat:'OptPut',str:Math.abs(comp.score)+0.2,
+            reason:`Put $${strike.toFixed(1)} exp ${T_ticks}t | IV ${(iv*100).toFixed(0)}%`,
+            isOpt:true,optType:'put',strike,iv,T_ticks,premium});
+        }
+      }
+
+      // GAMMA SCALP: High gamma near expiry — buy ATM options when IV is high
+      if(iv>0.8&&!hasOptPos&&optCount<risk.optMaxPos&&Math.random()<0.15){
+        const strike=price*(0.995+Math.random()*0.01);
+        const shortExpiry=60+Math.floor(Math.random()*60); // Very short expiry
+        const T_y=shortExpiry/2400;
+        const prem=blackScholes(price,strike,T_y,0.05,iv,'call');
+        if(prem>0.01){
+          buys.push({asset:asset.id,sym:asset.sym,strat:'Gamma',str:0.7,
+            reason:`Gamma scalp ATM $${strike.toFixed(1)} high IV ${(iv*100).toFixed(0)}%`,
+            isOpt:true,optType:'call',strike,iv,T_ticks:shortExpiry,premium:prem});
+        }
+      }
+
+      // STRADDLE: Buy both call and put when expecting big move (high z-score magnitude)
+      if(Math.abs(z)>0.5&&!hasOptPos&&optCount<risk.optMaxPos-1&&Math.random()<0.1){
+        const strike=price;
+        const exp=180;
+        const T_y=exp/2400;
+        const callP=blackScholes(price,strike,T_y,0.05,iv,'call');
+        const putP=blackScholes(price,strike,T_y,0.05,iv,'put');
+        if(callP>0.01&&putP>0.01){
+          buys.push({asset:asset.id,sym:asset.sym,strat:'Straddle',str:0.6,
+            reason:`Straddle $${strike.toFixed(1)} | expecting big move`,
+            isOpt:true,optType:'call',strike,iv,T_ticks:exp,premium:callP,
+            alsoAdd:{optType:'put',strike,iv,T_ticks:exp,premium:putP}});
+        }
+      }
+    }
+
+    // ===== SELL OPTIONS EARLY if profitable =====
+    const optPositions=positions.filter(p=>p.underlying===asset.id&&p.isOption);
+    for(const op of optPositions){
+      const curOptVal=op.optionPrice*op.contracts*100;
+      const optPnlPct=(curOptVal-op.costBasis)/op.costBasis;
+      // Take profit on options at 50%+ gain (they move fast)
+      if(optPnlPct>0.50){
+        const pnl=curOptVal-op.costBasis;
+        cash+=curOptVal;
+        positions=positions.filter(p=>p.id!==op.id);
+        recordSell(op,op.optionPrice,pnl,'TakeProfit',`Option +${(optPnlPct*100).toFixed(0)}% gain`);
+      }
+      // Stop loss on options at -60%
+      else if(optPnlPct<-0.60){
+        const pnl=curOptVal-op.costBasis;
+        cash+=curOptVal;
+        positions=positions.filter(p=>p.id!==op.id);
+        recordSell(op,op.optionPrice,pnl,'StopLoss',`Option ${(optPnlPct*100).toFixed(0)}% loss`);
+      }
+    }
+  }
+
+  // ===== STOCK/CRYPTO STOP-LOSS, TAKE-PROFIT, TRAILING STOP =====
+  for(const pos of [...positions]){
+    if(pos.isOption)continue;
+    const price=curPrices[pos.asset];if(!price)continue;
+    const pnl=(price-pos.entryPrice)/pos.entryPrice;
+    if(price>(pos.highPrice||pos.entryPrice))pos.highPrice=price;
+    const drop=(price-(pos.highPrice||pos.entryPrice))/(pos.highPrice||pos.entryPrice);
+    if(pnl<=risk.sl)sell(pos,price,'StopLoss',`SL ${(pnl*100).toFixed(1)}%`);
+    else if(pnl>=risk.tp)sell(pos,price,'TakeProfit',`TP +${(pnl*100).toFixed(1)}%`);
+    else if(pnl>0.015&&drop<-risk.trail)sell(pos,price,'TrailStop',`Trail ${(drop*100).toFixed(1)}% from high`);
+  }
+
+  // Execute buys
+  buys.sort((a,b)=>b.str-a.str);
+  for(const sig of buys){
+    if(sig.isOpt){
+      // Options buy
+      const optCount=positions.filter(p=>p.isOption).length;
+      const risk2=getRisk();
+      if(optCount>=risk2.optMaxPos)continue;
+      if(positions.some(p=>p.underlying===sig.asset&&p.isOption&&p.optType===sig.optType))continue;
+
+      const maxInv=tv*risk2.optPct;
+      const amount=Math.min(maxInv,cash*0.98);
+      if(amount<3)continue;
+
+      // Buy contracts: each contract = 100 shares worth of options
+      const contracts=Math.max(1,Math.floor(amount/(sig.premium*100)));
+      const cost=contracts*sig.premium*100;
+      if(cost>cash)continue;
+      cash-=cost;
+
+      const pos={
+        id:++tidCtr, asset:sig.asset+'_OPT_'+sig.optType.toUpperCase(), sym:sig.sym,
+        underlying:sig.asset, isOption:true, optType:sig.optType,
+        strike:sig.strike, iv:sig.iv, ticksLeft:sig.T_ticks,
+        contracts, entryPremium:sig.premium, optionPrice:sig.premium,
+        costBasis:cost, delta:0, gamma:0, theta:0,
+        strategy:sig.strat, time:new Date()
+      };
+      positions.push(pos);
+      tradeLog.unshift({id:tidCtr,type:'BUY',asset:pos.asset,sym:`${sig.sym} ${sig.optType.toUpperCase()} $${sig.strike.toFixed(1)}`,
+        price:sig.premium,qty:contracts,value:cost,pnl:null,strategy:sig.strat,reason:sig.reason,time:new Date()});
+
+      // Straddle: also buy the other leg
+      if(sig.alsoAdd){
+        const a2=sig.alsoAdd;
+        const contracts2=Math.max(1,Math.floor(amount/(a2.premium*100)));
+        const cost2=contracts2*a2.premium*100;
+        if(cost2<=cash){
+          cash-=cost2;
+          const pos2={
+            id:++tidCtr,asset:sig.asset+'_OPT_'+a2.optType.toUpperCase(),sym:sig.sym,
+            underlying:sig.asset,isOption:true,optType:a2.optType,
+            strike:a2.strike,iv:a2.iv,ticksLeft:a2.T_ticks,
+            contracts:contracts2,entryPremium:a2.premium,optionPrice:a2.premium,
+            costBasis:cost2,delta:0,gamma:0,theta:0,
+            strategy:'Straddle',time:new Date()
+          };
+          positions.push(pos2);
+          tradeLog.unshift({id:tidCtr,type:'BUY',asset:pos2.asset,sym:`${sig.sym} ${a2.optType.toUpperCase()} $${a2.strike.toFixed(1)}`,
+            price:a2.premium,qty:contracts2,value:cost2,pnl:null,strategy:'Straddle',reason:'Straddle leg 2',time:new Date()});
+        }
+      }
+    } else {
+      // Stock/crypto buy
+      if(positions.length>=getRisk().maxPos)continue;
+      if(positions.some(p=>p.asset===sig.asset&&!p.isOption))continue;
+      const maxInv=tv*getRisk().maxPosPct;
+      const amount=Math.min(maxInv,cash*0.98);
+      if(amount<3)continue;
+      buy(sig.asset,sig.sym,amount,sig.strat,sig.reason);
+    }
+  }
+
+  setDot('dotOptions',true);
+}
+
+function buy(id,sym,amount,strat,reason){
+  const price=curPrices[id];if(!price||amount<=0||amount>cash)return;
+  const qty=amount/price;cash-=amount;
+  positions.push({id:++tidCtr,asset:id,sym,qty,entryPrice:price,highPrice:price,strategy:strat,time:new Date(),isOption:false});
+  tradeLog.unshift({id:tidCtr,type:'BUY',asset:id,sym,price,qty,value:amount,pnl:null,strategy:strat,reason,time:new Date()});
+}
+
+function sell(pos,price,strat,reason){
+  const value=pos.qty*price;const cost=pos.qty*pos.entryPrice;const pnl=value-cost;
+  cash+=value;positions=positions.filter(p=>p.id!==pos.id);
+  recordSell(pos,price,pnl,strat,reason);
+}
+
+function recordSell(pos,price,pnl,strat,reason){
+  [strat,pos.strategy].forEach(s=>{if(!stats[s])stats[s]={trades:0,wins:0,pnl:0};stats[s].trades++;stats[s].pnl+=pnl;if(pnl>0)stats[s].wins++});
+  if(pnl>bestTr)bestTr=pnl;
+  const sym=pos.isOption?`${pos.sym} ${pos.optType.toUpperCase()} $${pos.strike.toFixed(1)}`:pos.sym;
+  const qty=pos.isOption?pos.contracts:pos.qty;
+  const value=pos.isOption?pnl+pos.costBasis:pos.qty*price;
+  tradeLog.unshift({id:++tidCtr,type:'SELL',asset:pos.asset,sym,price,qty,value,pnl,strategy:strat,reason,time:new Date()});
+}
+
+// =============================================================================
+// PORTFOLIO
+// =============================================================================
+function getPortValue(){
+  let inv=0;
+  for(const p of positions){
+    if(p.isOption) inv+=p.optionPrice*p.contracts*100;
+    else inv+=p.qty*(curPrices[p.asset]||p.entryPrice);
+  }
+  return cash+inv;
+}
+function getStockVal(){let v=0;for(const p of positions)if(!p.isOption)v+=p.qty*(curPrices[p.asset]||p.entryPrice);return v;}
+function getOptVal(){let v=0;for(const p of positions)if(p.isOption)v+=p.optionPrice*p.contracts*100;return v;}
+function getLeverage(){
+  let notional=0;
+  for(const p of positions){
+    if(p.isOption) notional+=Math.abs(p.delta)*p.contracts*100*(curPrices[p.underlying]||0);
+    else notional+=p.qty*(curPrices[p.asset]||p.entryPrice);
+  }
+  const tv=getPortValue();
+  return tv>0?notional/tv:0;
+}
+
+// =============================================================================
+// TABS
+// =============================================================================
+function getVisible(){
+  if(activeTab==='crypto')return CRYPTO;
+  if(activeTab==='stocks')return STOCKS;
+  return ALL_ASSETS;
+}
+function switchTab(t){
+  activeTab=t;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>{
+    const txt=el.textContent.toLowerCase();
+    if((t==='all'&&txt.includes('all'))||(t==='crypto'&&txt==='crypto')||(t==='stocks'&&txt==='stocks')||(t==='options'&&txt.includes('option')))
+      el.classList.add('active');
+  });
+  renderTicker();
+}
+
+// =============================================================================
+// RENDERING
+// =============================================================================
+function renderTicker(){
+  const grid=document.getElementById('tickerGrid');
+  const vis=activeTab==='options'?STOCKS:getVisible(); // Options only on stocks
+  document.getElementById('assetCount').textContent=vis.length+' assets';
+  let h='';
+  for(const a of vis){
+    const price=curPrices[a.id];if(!price)continue;
+    const chg=priceChg[a.id]||0;const up=chg>=0;
+    const prev=lastPrices[a.id]||price;
+    const flash=price>prev?'fg':price<prev?'fr':'';
+    const typeBg=a.type==='crypto'?'var(--purple-bg)':a.type==='etf'?'var(--blue-bg)':a.type==='commodity'?'var(--yellow-bg)':'var(--cyan-bg)';
+    const typeCol=a.type==='crypto'?'var(--purple)':a.type==='etf'?'var(--blue)':a.type==='commodity'?'var(--yellow)':'var(--cyan)';
+    const hist=priceHistory[a.id]||[];
+    let sigHtml='';
+    if(hist.length>=MIN_HIST){
+      const c=composite(hist,getRisk());
+      if(c.score>0.15)sigHtml=`<div class="tkr-signal"><span class="sig-dot" style="background:var(--green)"></span>BUY ${c.score.toFixed(2)}</div>`;
+      else if(c.score<-0.15)sigHtml=`<div class="tkr-signal"><span class="sig-dot" style="background:var(--red)"></span>SELL ${c.score.toFixed(2)}</div>`;
+    }
+    // Show IV for options tab
+    let ivHtml='';
+    if(activeTab==='options'&&hist.length>3){
+      const iv=impliedVol(hist);
+      ivHtml=`<div class="tkr-signal" style="color:var(--purple)">IV: ${(iv*100).toFixed(0)}%</div>`;
+    }
+    h+=`<div class="tkr ${flash}">
+      <div class="tkr-top"><span class="tkr-sym">${a.sym}</span><span class="tkr-type" style="background:${typeBg};color:${typeCol}">${activeTab==='options'?'options':a.type}</span></div>
+      <div class="tkr-price">$${fmtP(price)}</div>
+      <div class="tkr-chg" style="color:${up?'var(--green)':'var(--red)'}">${up?'▲':'▼'} ${Math.abs(chg).toFixed(2)}%</div>
+      ${sigHtml}${ivHtml}
+    </div>`;
+  }
+  grid.innerHTML=h;
+}
+
+function renderPortfolio(){
+  const tv=getPortValue(),sv=getStockVal(),ov=getOptVal();
+  const pnl=tv-STARTING,pct=(pnl/STARTING)*100,up=pnl>=0;
+  if(tv>peak)peak=tv;
+  const dd=(tv-peak)/peak;if(dd<maxDD)maxDD=dd;
+
+  document.getElementById('portfolioValue').textContent='$'+tv.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('portfolioValue').style.color=up?'var(--green)':'var(--red)';
+  const ce=document.getElementById('portfolioChange');
+  ce.textContent=`${up?'+':''}$${pnl.toFixed(2)} (${up?'+':''}${pct.toFixed(2)}%)`;
+  ce.style.color=up?'var(--green)':'var(--red)';
+  document.getElementById('cashVal').textContent='$'+cash.toFixed(2);
+  document.getElementById('stockVal').textContent='$'+sv.toFixed(2);
+  document.getElementById('optVal').textContent='$'+ov.toFixed(2);
+  document.getElementById('optVal').style.color=ov>0?'var(--purple)':'var(--text)';
+  document.getElementById('totalTrades').textContent=tradeLog.length;
+  document.getElementById('maxDD').textContent=maxDD<0?(maxDD*100).toFixed(1)+'%':'—';
+  document.getElementById('maxDD').style.color=maxDD<-0.1?'var(--red)':'var(--text)';
+  document.getElementById('bestTrade').textContent=bestTr>0?'+$'+bestTr.toFixed(2):'—';
+  document.getElementById('bestTrade').style.color='var(--green)';
+  const lev=getLeverage();
+  document.getElementById('leverage').textContent=lev.toFixed(1)+'x';
+  document.getElementById('leverage').style.color=lev>3?'var(--red)':lev>1.5?'var(--orange)':'var(--text)';
+
+  const sells=tradeLog.filter(t=>t.type==='SELL'&&t.pnl!==null);
+  if(sells.length){const wr=sells.filter(t=>t.pnl>0).length/sells.length;
+    document.getElementById('winRate').textContent=(wr*100).toFixed(0)+'%';
+    document.getElementById('winRate').style.color=wr>=.5?'var(--green)':'var(--red)';}
+
+  const pp=Math.min((tv/GOAL)*100,100);
+  document.getElementById('progPct').textContent=pp.toFixed(1)+'%';
+  document.getElementById('progFill').style.width=Math.max(pp,.5)+'%';
+  const rem=Math.max(GOAL-tv,0);
+  document.getElementById('progTxt').textContent=rem>0?'$'+rem.toLocaleString('en-US',{minimumFractionDigits:2})+' to go':'GOAL REACHED!';
+
+  portHistory.push({time:new Date(),value:tv});
+  if(portHistory.length>600)portHistory.shift();
+  chart.data.labels=portHistory.map(p=>fmtT(p.time));
+  chart.data.datasets[0].data=portHistory.map(p=>p.value);
+  chart.data.datasets[0].borderColor=up?'#10b981':'#f43f5e';
+  chart.data.datasets[0].backgroundColor=up?'rgba(16,185,129,.06)':'rgba(244,63,94,.06)';
+  const vals=portHistory.map(p=>p.value);
+  const minV=Math.min(...vals),maxV=Math.max(...vals);
+  const pad=Math.max((maxV-minV)*.15,maxV*.005);
+  chart.options.scales.y.min=Math.max(0,minV-pad);
+  chart.options.scales.y.max=maxV+pad;
+  chart.update('none');
+}
+
+function renderPositions(){
+  const c=document.getElementById('posList');
+  document.getElementById('posCount').textContent=positions.length;
+  if(!positions.length){c.innerHTML='<div class="empty">No open positions</div>';return;}
+  let h='';
+  for(const p of positions){
+    if(p.isOption){
+      const curVal=p.optionPrice*p.contracts*100;
+      const pnl=curVal-p.costBasis;
+      const pct=(pnl/p.costBasis)*100;
+      const up=pnl>=0;
+      h+=`<div class="pos">
+        <div class="pos-top">
+          <span class="pos-sym">${p.sym} <span class="opt-badge opt-${p.optType}">${p.optType.toUpperCase()}</span></span>
+          <span class="pos-pnl" style="color:${up?'var(--green)':'var(--red)'}">${up?'+':''}$${pnl.toFixed(2)} (${up?'+':''}${pct.toFixed(0)}%)</span>
+        </div>
+        <div class="pos-det"><span>Strike $${p.strike.toFixed(2)}</span><span>${p.contracts} contracts</span><span>Val $${curVal.toFixed(2)}</span></div>
+        <div class="pos-det"><span>Δ ${p.delta.toFixed(3)}</span><span>Γ ${p.gamma.toFixed(4)}</span><span>Θ ${p.theta.toFixed(3)}</span></div>
+        <div class="pos-det"><span>IV ${(p.iv*100).toFixed(0)}%</span><span>Exp ${p.ticksLeft} ticks</span><span>Cost $${p.costBasis.toFixed(2)}</span></div>
+        <div class="pos-strat"><span class="stag stag-${p.strategy.toLowerCase()}">${p.strategy}</span> ${fmtT(p.time)}</div>
+      </div>`;
+    } else {
+      const price=curPrices[p.asset]||p.entryPrice;
+      const val=p.qty*price;const pnl=val-p.qty*p.entryPrice;const pct=((price-p.entryPrice)/p.entryPrice)*100;const up=pnl>=0;
+      const risk=getRisk();
+      h+=`<div class="pos">
+        <div class="pos-top"><span class="pos-sym">${p.sym} <span class="opt-badge opt-stock">STOCK</span></span><span class="pos-pnl" style="color:${up?'var(--green)':'var(--red)'}">${up?'+':''}$${pnl.toFixed(2)} (${up?'+':''}${pct.toFixed(1)}%)</span></div>
+        <div class="pos-det"><span>${p.qty.toFixed(6)}</span><span>Entry $${fmtP(p.entryPrice)}</span><span>Now $${fmtP(price)}</span></div>
+        <div class="pos-det"><span>Val $${val.toFixed(2)}</span><span>SL $${fmtP(p.entryPrice*(1+risk.sl))}</span><span>TP $${fmtP(p.entryPrice*(1+risk.tp))}</span></div>
+        <div class="pos-strat"><span class="stag stag-${p.strategy.toLowerCase()}">${p.strategy}</span> ${fmtT(p.time)}</div>
+      </div>`;
+    }
+  }
+  c.innerHTML=h;
+}
+
+function renderLog(){
+  const c=document.getElementById('logBody');
+  document.getElementById('logCount').textContent=tradeLog.length+' trades';
+  if(!tradeLog.length){c.innerHTML='<div class="empty">No trades yet</div>';return;}
+  let h=`<table class="tlog"><thead><tr><th>Time</th><th>Type</th><th>Asset</th><th>Price</th><th>Qty</th><th>Value</th><th>P&L</th><th>Strategy</th></tr></thead><tbody>`;
+  for(const t of tradeLog.slice(0,100)){
+    const sc=t.strategy.toLowerCase().replace(/\s/g,'');
+    h+=`<tr><td>${fmtT(t.time)}</td><td class="c-${t.type.toLowerCase()}">${t.type}</td><td>${t.sym}</td>
+      <td>$${fmtP(t.price)}</td><td>${t.qty.toFixed?t.qty.toFixed(t.qty<10?4:2):t.qty}</td><td>$${t.value.toFixed(2)}</td>
+      <td style="color:${t.pnl===null?'var(--text3)':t.pnl>=0?'var(--green)':'var(--red)'}">${t.pnl===null?'—':`${t.pnl>=0?'+':''}$${t.pnl.toFixed(2)}`}</td>
+      <td><span class="stag stag-${sc}">${t.strategy}</span></td></tr>`;
+  }
+  h+='</tbody></table>';c.innerHTML=h;
+}
+
+function renderStrats(){
+  const c=document.getElementById('stratBody');
+  const defs=[
+    {k:'RSI',n:'RSI',col:'var(--purple)',d:'Oversold/Overbought'},
+    {k:'MA',n:'MA Crossover',col:'var(--cyan)',d:'Golden/Death cross'},
+    {k:'Momentum',n:'Momentum',col:'var(--orange)',d:'Breakout'},
+    {k:'MeanRev',n:'Mean Reversion',col:'var(--yellow)',d:'Z-score revert'},
+    {k:'VWAP',n:'VWAP',col:'var(--blue)',d:'Vol-weighted'},
+    {k:'Composite',n:'Composite',col:'var(--gold)',d:'Multi-signal'},
+    {k:'OptCall',n:'Calls',col:'var(--green)',d:'Bullish options'},
+    {k:'OptPut',n:'Puts',col:'var(--red)',d:'Bearish options'},
+    {k:'Gamma',n:'Gamma Scalp',col:'var(--purple)',d:'High-gamma ATM'},
+    {k:'Straddle',n:'Straddle',col:'var(--cyan)',d:'Vol play'},
+    {k:'StopLoss',n:'Stop-Loss',col:'var(--red)',d:'Risk exit'},
+    {k:'TakeProfit',n:'Take-Profit',col:'var(--green)',d:'Profit exit'},
+    {k:'TrailStop',n:'Trail Stop',col:'var(--orange)',d:'Dynamic exit'},
+    {k:'OptExpiry',n:'Expiry',col:'var(--pink)',d:'Option expired'},
+  ];
+  let h='';
+  for(const d of defs){
+    const s=stats[d.k]||{trades:0,wins:0,pnl:0};
+    if(s.trades===0&&['Gamma','Straddle','OptExpiry'].includes(d.k))continue; // Hide unused exotic strats
+    const wr=s.trades>0?(s.wins/s.trades*100).toFixed(0)+'%':'—';
+    h+=`<div class="strat-item"><div><div class="strat-name" style="color:${d.col}">${d.n}</div><div class="strat-desc">${d.d}</div></div>
+      <div class="strat-right"><div class="strat-trades">${s.trades} trades</div>
+      <div class="strat-wr">WR: ${wr} | <span style="color:${s.pnl>=0?'var(--green)':'var(--red)'}">${s.pnl>=0?'+':''}$${s.pnl.toFixed(2)}</span></div></div></div>`;
+  }
+  c.innerHTML=h;
+}
+
+function renderAll(){renderTicker();renderPortfolio();renderPositions();renderLog();renderStrats();}
+
+// =============================================================================
+// CONTROL
+// =============================================================================
+async function tick(){
+  await fetchCrypto();tickStockSim();
+  if(running)evaluate();
+  renderAll();
+  document.getElementById('lastUpdate').textContent='Updated '+fmtT(new Date());
+}
+
+function toggleBot(){
+  running=!running;
+  const btn=document.getElementById('toggleBtn'),badge=document.getElementById('statusBadge');
+  if(running){btn.innerHTML='&#9646;&#9646; PAUSE';btn.className='btn btn-stop';badge.textContent='RUNNING';badge.className='badge badge-run';startLoop();}
+  else{btn.innerHTML='&#9654; START';btn.className='btn btn-go';badge.textContent='PAUSED';badge.className='badge badge-pause';stopLoop();}
+}
+function startLoop(){stopLoop();tick();timer=setInterval(tick,parseInt(document.getElementById('refreshRate').value))}
+function stopLoop(){if(timer){clearInterval(timer);timer=null}}
+function resetBot(){
+  if(!confirm('Reset everything?'))return;
+  running=false;stopLoop();
+  cash=STARTING;positions=[];tradeLog=[];priceHistory={};curPrices={};lastPrices={};priceChg={};
+  portHistory=[{time:new Date(),value:STARTING}];
+  tidCtr=0;apiErr=0;peak=STARTING;maxDD=0;bestTr=0;tickCount=0;stockSim={};cryptoStartPrices={};
+  STRAT_KEYS.forEach(s=>stats[s]={trades:0,wins:0,pnl:0});
+  chart.data.labels=[fmtT(new Date())];chart.data.datasets[0].data=[STARTING];chart.update();
+  document.getElementById('toggleBtn').innerHTML='&#9654; START';
+  document.getElementById('toggleBtn').className='btn btn-go';
+  document.getElementById('statusBadge').textContent='PAUSED';
+  document.getElementById('statusBadge').className='badge badge-pause';
+  initStockSim();renderAll();
+}
+document.getElementById('refreshRate').addEventListener('change',()=>{if(running)startLoop()});
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+function fmtP(p){if(p>=1e3)return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});if(p>=1)return p.toFixed(2);if(p>=.01)return p.toFixed(4);return p.toFixed(6)}
+function fmtT(d){return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})}
+function setDot(id,ok){const el=document.getElementById(id);if(el)el.style.background=ok?'var(--green)':'var(--red)'}
+setInterval(()=>{document.getElementById('clockDisplay').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})},1000);
+
+// =============================================================================
+// CHART
+// =============================================================================
+const ctx=document.getElementById('portfolioChart').getContext('2d');
+const chart=new Chart(ctx,{type:'line',data:{labels:[fmtT(new Date())],datasets:[
+  {label:'Portfolio ($)',data:[STARTING],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.06)',borderWidth:2,fill:true,tension:.3,pointRadius:0,pointHitRadius:8}
+]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+  plugins:{legend:{labels:{color:'#5a6a84',font:{size:9,family:'monospace'},boxWidth:10}},
+    tooltip:{backgroundColor:'#131c2e',titleColor:'#e8edf5',bodyColor:'#e8edf5',borderColor:'#1e2d45',borderWidth:1,
+      titleFont:{family:'monospace',size:10},bodyFont:{family:'monospace',size:10},
+      callbacks:{label:c=>' '+c.dataset.label+': $'+c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2})}}},
+  scales:{x:{ticks:{color:'#5a6a84',font:{size:8,family:'monospace'},maxTicksLimit:10},grid:{color:'rgba(30,45,69,.4)'}},
+    y:{beginAtZero:false,grace:'10%',ticks:{color:'#5a6a84',font:{size:9,family:'monospace'},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(30,45,69,.4)'}}}}});
+
+// =============================================================================
+// INIT
+// =============================================================================
+(async function(){initStockSim();renderAll();await fetchCrypto();tickStockSim();renderAll()})();
+</script>
+</body>
+</html>

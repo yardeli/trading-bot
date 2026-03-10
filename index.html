@@ -22,7 +22,6 @@
 }
 body{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;background:var(--bg0);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-/* ===== HEADER ===== */
 .header{background:linear-gradient(180deg,var(--bg2),var(--bg1));border-bottom:1px solid var(--border);padding:0;position:sticky;top:0;z-index:100}
 .header-top{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;flex-wrap:wrap;gap:8px}
 .brand{display:flex;align-items:center;gap:12px}
@@ -34,7 +33,6 @@ body{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;backgr
 .badge{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .badge-run{background:var(--green-bg);color:var(--green)}
 .badge-pause{background:var(--red-bg);color:var(--red)}
-.badge-info{background:var(--blue-bg);color:var(--blue)}
 .btn{padding:5px 14px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:11px;cursor:pointer;transition:.12s}
 .btn:hover{background:var(--bg4);border-color:var(--border-light)}
 .btn-go{border-color:var(--green-dim);background:var(--green-dim);color:var(--green)}
@@ -47,22 +45,16 @@ body{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;backgr
 .header-status span{display:flex;align-items:center;gap:4px}
 .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
 
-/* ===== TABS ===== */
 .tabs{display:flex;gap:0;padding:0 20px;background:var(--bg1);border-bottom:1px solid var(--border)}
 .tab{padding:8px 18px;font-size:11px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;font-family:inherit;background:none;border-top:none;border-left:none;border-right:none}
 .tab:hover{color:var(--text2)}
 .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
 
-/* ===== LAYOUT ===== */
 .dashboard{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px 14px;max-width:1700px;margin:0 auto}
-.tab-content{display:none}.tab-content.active{display:block}
-
-/* ===== CARDS ===== */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
 .card-h{padding:8px 12px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:flex;align-items:center;justify-content:space-between}
 .card-b{padding:12px}
 
-/* ===== PORTFOLIO HERO ===== */
 .hero{grid-column:1/-1}
 .hero-inner{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:20px}
 .port-val{font-size:44px;font-weight:800;line-height:1}
@@ -77,7 +69,6 @@ body{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;backgr
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));border-radius:9px;transition:width .5s}
 .prog-txt{font-size:10px;color:var(--text3);margin-top:3px;text-align:center}
 
-/* ===== TICKER ===== */
 .ticker-wrap{grid-column:1/-1}
 .tkr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:6px}
 .tkr{background:var(--bg1);border:1px solid var(--border);border-radius:5px;padding:8px 10px;transition:.12s}
@@ -90,11 +81,9 @@ body{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;backgr
 .tkr-signal{font-size:9px;color:var(--text3);margin-top:2px}
 .sig-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px}
 
-/* ===== CHART ===== */
 .chart-card{grid-column:1/3;min-height:280px}
 .chart-card .card-b{padding:6px;height:260px}
 
-/* ===== POSITIONS ===== */
 .pos-card{grid-column:3/4;grid-row:3/5}
 .pos{padding:8px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:3px}
 .pos:last-child{border-bottom:none}
@@ -105,7 +94,6 @@ body{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;backgr
 .pos-strat{font-size:9px;color:var(--text3)}
 .empty{color:var(--text3);font-size:11px;text-align:center;padding:24px 0}
 
-/* ===== TRADE LOG ===== */
 .log-card{grid-column:1/3;max-height:380px}
 .log-card .card-b{padding:0;max-height:330px;overflow-y:auto}
 table.tlog{width:100%;border-collapse:collapse;font-size:10px}
@@ -117,14 +105,13 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
 .stag-rsi{background:var(--purple-bg);color:var(--purple)}
 .stag-ma{background:var(--cyan-bg);color:var(--cyan)}
 .stag-momentum{background:var(--orange-bg);color:var(--orange)}
-.stag-mean{background:var(--yellow-bg);color:var(--yellow)}
+.stag-meanrev{background:var(--yellow-bg);color:var(--yellow)}
 .stag-vwap{background:var(--blue-bg);color:var(--blue)}
 .stag-stoploss{background:var(--red-bg);color:var(--red)}
 .stag-takeprofit{background:var(--green-bg);color:var(--green)}
 .stag-trailstop{background:rgba(251,146,60,.15);color:#f59e0b}
 .stag-composite{background:rgba(212,160,23,.15);color:var(--gold)}
 
-/* ===== STRATEGY PANEL ===== */
 .strat-card{grid-column:3/4}
 .strat-item{padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .strat-item:last-child{border-bottom:none}
@@ -134,10 +121,8 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
 .strat-trades{font-size:10px}
 .strat-wr{font-size:9px;color:var(--text3)}
 
-/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
-/* ===== RESPONSIVE ===== */
 @media(max-width:1100px){
   .dashboard{grid-template-columns:1fr 1fr}
   .hero,.ticker-wrap,.chart-card,.log-card,.pos-card,.strat-card{grid-column:1/-1;grid-row:auto}
@@ -156,7 +141,6 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="header">
   <div class="header-top">
     <div class="brand">
@@ -169,9 +153,8 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
       <div>
         <span class="hdr-label">Refresh</span>
         <select id="refreshRate" class="sel">
-          <option value="10000">10s</option>
-          <option value="15000" selected>15s</option>
-          <option value="30000">30s</option>
+          <option value="15000">15s</option>
+          <option value="30000" selected>30s</option>
           <option value="60000">60s</option>
         </select>
       </div>
@@ -195,90 +178,73 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
   </div>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
   <button class="tab active" onclick="switchTab('all')">All Assets</button>
   <button class="tab" onclick="switchTab('crypto')">Crypto Only</button>
   <button class="tab" onclick="switchTab('stocks')">Stocks Only</button>
 </div>
 
-<!-- DASHBOARD -->
 <div class="dashboard">
-
-  <!-- Hero -->
-  <div class="card hero">
-    <div class="card-b">
-      <div class="hero-inner">
-        <div>
-          <div class="port-val" id="portfolioValue">$1,000.00</div>
-          <div class="port-chg" id="portfolioChange">+$0.00 (0.00%)</div>
-          <div class="port-meta">
-            <div class="pm"><span class="pm-l">Cash</span><span class="pm-v" id="cashVal">$1,000.00</span></div>
-            <div class="pm"><span class="pm-l">Invested</span><span class="pm-v" id="invVal">$0.00</span></div>
-            <div class="pm"><span class="pm-l">Trades</span><span class="pm-v" id="totalTrades">0</span></div>
-            <div class="pm"><span class="pm-l">Win Rate</span><span class="pm-v" id="winRate">&mdash;</span></div>
-            <div class="pm"><span class="pm-l">Best Trade</span><span class="pm-v" id="bestTrade">&mdash;</span></div>
-            <div class="pm"><span class="pm-l">Drawdown</span><span class="pm-v" id="maxDD">&mdash;</span></div>
-          </div>
-        </div>
-        <div class="prog-sec">
-          <div class="prog-lbl"><span>$1,000 &rarr; $100,000 Challenge</span><span id="progPct">1.0%</span></div>
-          <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:1%"></div></div>
-          <div class="prog-txt" id="progTxt">$99,000.00 to go</div>
-        </div>
+  <div class="card hero"><div class="card-b"><div class="hero-inner">
+    <div>
+      <div class="port-val" id="portfolioValue">$1,000.00</div>
+      <div class="port-chg" id="portfolioChange">+$0.00 (0.00%)</div>
+      <div class="port-meta">
+        <div class="pm"><span class="pm-l">Cash</span><span class="pm-v" id="cashVal">$1,000.00</span></div>
+        <div class="pm"><span class="pm-l">Invested</span><span class="pm-v" id="invVal">$0.00</span></div>
+        <div class="pm"><span class="pm-l">Trades</span><span class="pm-v" id="totalTrades">0</span></div>
+        <div class="pm"><span class="pm-l">Win Rate</span><span class="pm-v" id="winRate">&mdash;</span></div>
+        <div class="pm"><span class="pm-l">Best Trade</span><span class="pm-v" id="bestTrade">&mdash;</span></div>
+        <div class="pm"><span class="pm-l">Drawdown</span><span class="pm-v" id="maxDD">&mdash;</span></div>
       </div>
     </div>
-  </div>
+    <div class="prog-sec">
+      <div class="prog-lbl"><span>$1,000 &rarr; $100,000 Challenge</span><span id="progPct">1.0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:1%"></div></div>
+      <div class="prog-txt" id="progTxt">$99,000.00 to go</div>
+    </div>
+  </div></div></div>
 
-  <!-- Ticker -->
   <div class="card ticker-wrap">
     <div class="card-h">Live Prices<span id="assetCount"></span></div>
     <div class="card-b"><div class="tkr-grid" id="tickerGrid"></div></div>
   </div>
 
-  <!-- Chart -->
   <div class="card chart-card">
     <div class="card-h">Portfolio Value Over Time</div>
     <div class="card-b"><canvas id="portfolioChart"></canvas></div>
   </div>
 
-  <!-- Positions -->
   <div class="card pos-card">
     <div class="card-h">Open Positions <span id="posCount">0</span></div>
     <div class="card-b" id="posList"><div class="empty">No open positions</div></div>
   </div>
 
-  <!-- Trade Log -->
   <div class="card log-card">
     <div class="card-h">Trade Log <span id="logCount">0 trades</span></div>
     <div class="card-b" id="logBody"><div class="empty">No trades yet &mdash; press START</div></div>
   </div>
 
-  <!-- Strategy -->
   <div class="card strat-card">
     <div class="card-h">Strategy Performance</div>
     <div class="card-b" id="stratBody"></div>
   </div>
-
 </div>
 
 <script>
 // =============================================================================
-// ASSET DEFINITIONS
+// ASSETS
 // =============================================================================
-// Crypto — real prices from CoinGecko
 const CRYPTO_ASSETS = [
-  {id:'bitcoin',sym:'BTC',name:'Bitcoin',type:'crypto',bn:'BTCUSDT'},
-  {id:'ethereum',sym:'ETH',name:'Ethereum',type:'crypto',bn:'ETHUSDT'},
-  {id:'solana',sym:'SOL',name:'Solana',type:'crypto',bn:'SOLUSDT'},
-  {id:'cardano',sym:'ADA',name:'Cardano',type:'crypto',bn:'ADAUSDT'},
-  {id:'avalanche-2',sym:'AVAX',name:'Avalanche',type:'crypto',bn:'AVAXUSDT'},
-  {id:'chainlink',sym:'LINK',name:'Chainlink',type:'crypto',bn:'LINKUSDT'},
-  {id:'polkadot',sym:'DOT',name:'Polkadot',type:'crypto',bn:'DOTUSDT'},
+  {id:'bitcoin',sym:'BTC',name:'Bitcoin',type:'crypto'},
+  {id:'ethereum',sym:'ETH',name:'Ethereum',type:'crypto'},
+  {id:'solana',sym:'SOL',name:'Solana',type:'crypto'},
+  {id:'cardano',sym:'ADA',name:'Cardano',type:'crypto'},
+  {id:'avalanche-2',sym:'AVAX',name:'Avalanche',type:'crypto'},
+  {id:'chainlink',sym:'LINK',name:'Chainlink',type:'crypto'},
+  {id:'polkadot',sym:'DOT',name:'Polkadot',type:'crypto'},
 ];
 
-// Stocks & ETFs — simulated prices with realistic behavior
-// We seed with approximate real prices and simulate from there
 const STOCK_ASSETS = [
   {id:'AAPL',sym:'AAPL',name:'Apple Inc.',type:'stock',seed:195,vol:.015,drift:.0002},
   {id:'MSFT',sym:'MSFT',name:'Microsoft',type:'stock',seed:420,vol:.014,drift:.0002},
@@ -300,9 +266,8 @@ const ALL_ASSETS = [...CRYPTO_ASSETS, ...STOCK_ASSETS];
 // =============================================================================
 const STARTING_BALANCE = 1000;
 const GOAL = 100000;
-const MIN_HISTORY = 8;  // Start trading faster with less history
+const MIN_HISTORY = 8;
 
-// Risk profiles — selected by the user
 const RISK_PROFILES = {
   conservative: {
     maxPosPct: .25, maxPositions: 5, stopLoss: -.06, takeProfit: .15,
@@ -324,20 +289,20 @@ const MA_LONG = 15;
 const MOMENTUM_PERIOD = 10;
 const VWAP_PERIOD = 12;
 const MEAN_REV_PERIOD = 15;
-const MEAN_REV_THRESHOLD = 1.0; // std deviations — triggers much more often
+const MEAN_REV_THRESHOLD = 1.0;
 
 // =============================================================================
 // STATE
 // =============================================================================
-let running = false;
+let botRunning = false;
 let cash = STARTING_BALANCE;
 let positions = [];
 let tradeLog = [];
 let priceHistory = {};
 let currentPrices = {};
-let priceChanges = {};  // 24h or session changes
+let priceChanges = {};
 let lastPrices = {};
-let portfolioHistory = [{time:new Date(),value:STARTING_BALANCE}];
+let portfolioHistory = [{time: new Date(), value: STARTING_BALANCE}];
 let tradeIdCtr = 0;
 let timer = null;
 let apiErrors = 0;
@@ -345,90 +310,86 @@ let peakValue = STARTING_BALANCE;
 let maxDrawdown = 0;
 let bestTradeAmt = 0;
 let activeTab = 'all';
-
-// Simulated stock state
-let stockSimPrices = {};  // current simulated prices
+let stockSimPrices = {};
 let stockSimInited = false;
 
-// Strategy stats
 const STRATS = ['RSI','MA','Momentum','MeanRev','VWAP','Composite','StopLoss','TakeProfit','TrailStop'];
 let stratStats = {};
-STRATS.forEach(s => stratStats[s] = {trades:0,wins:0,pnl:0});
+STRATS.forEach(s => stratStats[s] = {trades:0, wins:0, pnl:0});
 
 // =============================================================================
 // CHART
 // =============================================================================
 const ctx = document.getElementById('portfolioChart').getContext('2d');
 const chart = new Chart(ctx, {
-  type:'line',
-  data:{
-    labels:[fmtTime(new Date())],
-    datasets:[
-      {label:'Portfolio ($)',data:[STARTING_BALANCE],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.06)',borderWidth:2,fill:true,tension:.3,pointRadius:0,pointHitRadius:8}
-    ]
+  type: 'line',
+  data: {
+    labels: [fmtTime(new Date())],
+    datasets: [{
+      label: 'Portfolio ($)',
+      data: [STARTING_BALANCE],
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16,185,129,.06)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.3,
+      pointRadius: 0,
+      pointHitRadius: 8,
+    }]
   },
-  options:{
-    responsive:true,maintainAspectRatio:false,
-    interaction:{intersect:false,mode:'index'},
-    plugins:{
-      legend:{labels:{color:'#5a6a84',font:{size:9,family:'monospace'},boxWidth:10}},
-      tooltip:{backgroundColor:'#131c2e',titleColor:'#e8edf5',bodyColor:'#e8edf5',borderColor:'#1e2d45',borderWidth:1,
-        titleFont:{family:'monospace',size:10},bodyFont:{family:'monospace',size:10},
-        callbacks:{label:c=>' '+c.dataset.label+': $'+c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2})}}
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {intersect: false, mode: 'index'},
+    plugins: {
+      legend: {labels: {color: '#5a6a84', font: {size: 9, family: 'monospace'}, boxWidth: 10}},
+      tooltip: {
+        backgroundColor: '#131c2e', titleColor: '#e8edf5', bodyColor: '#e8edf5',
+        borderColor: '#1e2d45', borderWidth: 1,
+        titleFont: {family: 'monospace', size: 10}, bodyFont: {family: 'monospace', size: 10},
+        callbacks: {label: c => ' ' + c.dataset.label + ': $' + c.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2})}
+      }
     },
-    scales:{
-      x:{ticks:{color:'#5a6a84',font:{size:8,family:'monospace'},maxTicksLimit:10},grid:{color:'rgba(30,45,69,.4)'}},
-      y:{beginAtZero:false,grace:'10%',ticks:{color:'#5a6a84',font:{size:9,family:'monospace'},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(30,45,69,.4)'}}
+    scales: {
+      x: {ticks: {color: '#5a6a84', font: {size: 8, family: 'monospace'}, maxTicksLimit: 10}, grid: {color: 'rgba(30,45,69,.4)'}},
+      y: {beginAtZero: false, grace: '10%', ticks: {color: '#5a6a84', font: {size: 9, family: 'monospace'}, callback: v => '$' + v.toLocaleString()}, grid: {color: 'rgba(30,45,69,.4)'}}
     }
   }
 });
 
 // =============================================================================
-// PRICE FETCHING — CRYPTO (CoinGecko)
+// CRYPTO PRICES (CoinGecko — free, no key)
 // =============================================================================
-let cryptoStartPrices = {};
 async function fetchCrypto() {
-  // Binance public API — no key needed, 1200 req/min limit (runs for days)
   try {
-    const symbols = CRYPTO_ASSETS.map(a => a.bn);
-    const query = encodeURIComponent(JSON.stringify(symbols));
-    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbols=${query}`);
+    const ids = CRYPTO_ASSETS.map(a => a.id).join(',');
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    const lookup = {};
-    for (const item of data) lookup[item.symbol] = parseFloat(item.price);
-
+    const d = await r.json();
     for (const a of CRYPTO_ASSETS) {
-      const p = lookup[a.bn];
-      if (!p) continue;
+      if (!d[a.id]) continue;
+      const p = d[a.id].usd;
       lastPrices[a.id] = currentPrices[a.id] || p;
       currentPrices[a.id] = p;
-      if (!cryptoStartPrices[a.id]) cryptoStartPrices[a.id] = p;
-      priceChanges[a.id] = ((p - cryptoStartPrices[a.id]) / cryptoStartPrices[a.id]) * 100;
+      priceChanges[a.id] = d[a.id].usd_24h_change || 0;
       if (!priceHistory[a.id]) priceHistory[a.id] = [];
       priceHistory[a.id].push(p);
       if (priceHistory[a.id].length > 300) priceHistory[a.id].shift();
     }
     apiErrors = 0;
     setDot('dotCrypto', true);
-    document.getElementById('apiStatus').innerHTML = '● Binance Connected';
-    document.getElementById('apiStatus').style.color = 'var(--green)';
     return true;
-  } catch(e) {
+  } catch (e) {
     apiErrors++;
-    console.error('Binance fetch error:', e);
+    console.error('Crypto fetch error:', e);
     setDot('dotCrypto', false);
-    document.getElementById('apiStatus').innerHTML = `● Error (${apiErrors})`;
-    document.getElementById('apiStatus').style.color = 'var(--red)';
     return false;
   }
 }
 
 // =============================================================================
-// PRICE SIMULATION — STOCKS
+// STOCK SIMULATION (Geometric Brownian Motion)
 // =============================================================================
-// Uses geometric Brownian motion with mean-reverting volatility for realistic
-// stock price behavior. Each tick simulates one 15-second "candle."
 function initStockSim() {
   for (const a of STOCK_ASSETS) {
     stockSimPrices[a.id] = a.seed;
@@ -443,26 +404,21 @@ function initStockSim() {
 function tickStockSim() {
   for (const a of STOCK_ASSETS) {
     const prev = stockSimPrices[a.id];
-    // Geometric Brownian motion: dS = S * (mu*dt + sigma*dW)
-    const dt = 1; // one tick
+    const dt = 1;
     const drift = a.drift * dt;
-    // Box-Muller transform for normal random
     const u1 = Math.random(), u2 = Math.random();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     const shock = a.vol * z * Math.sqrt(dt);
-    // Add occasional momentum bursts for more trading opportunities
     let extraMomentum = 0;
-    if (Math.random() < 0.08) { // 8% chance of a momentum burst each tick
-      extraMomentum = (Math.random() - 0.35) * a.vol * 4; // bullish bias for more action
+    if (Math.random() < 0.08) {
+      extraMomentum = (Math.random() - 0.35) * a.vol * 4;
     }
     const newPrice = prev * (1 + drift + shock + extraMomentum);
-    const clamped = Math.max(newPrice, prev * 0.9); // prevent flash crashes > 10%
+    const clamped = Math.max(newPrice, prev * 0.9);
 
     lastPrices[a.id] = currentPrices[a.id] || clamped;
     stockSimPrices[a.id] = clamped;
     currentPrices[a.id] = clamped;
-
-    // Track session change from seed
     priceChanges[a.id] = ((clamped - a.seed) / a.seed) * 100;
 
     if (!priceHistory[a.id]) priceHistory[a.id] = [];
@@ -475,91 +431,76 @@ function tickStockSim() {
 // =============================================================================
 // INDICATORS
 // =============================================================================
-function calcRSI(prices, period=RSI_PERIOD) {
-  if (prices.length < period+1) return 50;
-  const r = prices.slice(-(period+1));
-  let g=0,l=0;
-  for (let i=1;i<r.length;i++){const c=r[i]-r[i-1];if(c>0)g+=c;else l+=Math.abs(c)}
-  g/=period;l/=period;
-  if(l===0)return 100;
-  return 100-(100/(1+g/l));
+function calcRSI(prices, period = RSI_PERIOD) {
+  if (prices.length < period + 1) return 50;
+  const recent = prices.slice(-(period + 1));
+  let gains = 0, losses = 0;
+  for (let i = 1; i < recent.length; i++) {
+    const change = recent[i] - recent[i - 1];
+    if (change > 0) gains += change; else losses += Math.abs(change);
+  }
+  gains /= period; losses /= period;
+  if (losses === 0) return 100;
+  return 100 - (100 / (1 + gains / losses));
 }
 
-function calcMA(prices,p){if(prices.length<p)return null;const s=prices.slice(-p);return s.reduce((a,b)=>a+b,0)/p}
-
-function calcMomentum(prices,p=MOMENTUM_PERIOD){
-  if(prices.length<p+1)return 0;
-  return(prices[prices.length-1]-prices[prices.length-1-p])/prices[prices.length-1-p];
+function calcMA(prices, period) {
+  if (prices.length < period) return null;
+  const slice = prices.slice(-period);
+  return slice.reduce((a, b) => a + b, 0) / period;
 }
 
-// Mean-reversion: z-score of current price vs recent mean
-function calcZScore(prices, p=MEAN_REV_PERIOD) {
+function calcMomentum(prices, period = MOMENTUM_PERIOD) {
+  if (prices.length < period + 1) return 0;
+  return (prices[prices.length - 1] - prices[prices.length - 1 - period]) / prices[prices.length - 1 - period];
+}
+
+function calcZScore(prices, p = MEAN_REV_PERIOD) {
   if (prices.length < p) return 0;
   const slice = prices.slice(-p);
-  const mean = slice.reduce((a,b)=>a+b,0) / p;
-  const std = Math.sqrt(slice.reduce((a,v)=>a+(v-mean)**2,0)/p);
+  const mean = slice.reduce((a, b) => a + b, 0) / p;
+  const std = Math.sqrt(slice.reduce((a, v) => a + (v - mean) ** 2, 0) / p);
   if (std === 0) return 0;
-  return (prices[prices.length-1] - mean) / std;
+  return (prices[prices.length - 1] - mean) / std;
 }
 
-// VWAP approximation (volume-weighted, we approximate volume as inverse of volatility)
-function calcVWAP(prices, p=VWAP_PERIOD) {
+function calcVWAP(prices, p = VWAP_PERIOD) {
   if (prices.length < p) return null;
   const slice = prices.slice(-p);
-  // Use price range as volume proxy (higher range = higher volume)
   let sumPV = 0, sumV = 0;
-  for (let i=1;i<slice.length;i++){
-    const vol = Math.abs(slice[i]-slice[i-1]) + 0.001;
+  for (let i = 1; i < slice.length; i++) {
+    const vol = Math.abs(slice[i] - slice[i - 1]) + 0.001;
     sumPV += slice[i] * vol;
     sumV += vol;
   }
-  return sumV > 0 ? sumPV / sumV : slice[slice.length-1];
+  return sumV > 0 ? sumPV / sumV : slice[slice.length - 1];
 }
 
-// Composite signal: weighted combination of all indicators
 function calcComposite(prices, risk) {
-  if (prices.length < MIN_HISTORY) return {score:0, signals:[]};
+  if (prices.length < MIN_HISTORY) return {score: 0, signals: []};
   const rsi = calcRSI(prices);
   const maS = calcMA(prices, MA_SHORT);
   const maL = calcMA(prices, MA_LONG);
   const mom = calcMomentum(prices);
   const zScore = calcZScore(prices);
   const vwap = calcVWAP(prices);
-  const price = prices[prices.length-1];
+  const price = prices[prices.length - 1];
 
   let score = 0;
   const signals = [];
 
-  // RSI component (-1 to +1)
-  if (rsi < risk.rsiOversold) {
-    const s = (risk.rsiOversold - rsi) / risk.rsiOversold;
-    score += s * 0.25;
-    signals.push(`RSI ${rsi.toFixed(0)}`);
-  } else if (rsi > risk.rsiOverbought) {
-    const s = -(rsi - risk.rsiOverbought) / (100 - risk.rsiOverbought);
-    score += s * 0.25;
-    signals.push(`RSI ${rsi.toFixed(0)}`);
-  }
+  if (rsi < risk.rsiOversold) { score += (risk.rsiOversold - rsi) / risk.rsiOversold * 0.25; signals.push('RSI' + rsi.toFixed(0)); }
+  else if (rsi > risk.rsiOverbought) { score -= (rsi - risk.rsiOverbought) / (100 - risk.rsiOverbought) * 0.25; signals.push('RSI' + rsi.toFixed(0)); }
 
-  // MA component
-  if (maS && maL) {
-    if (maS > maL) { score += 0.2; signals.push('MA+'); }
-    else { score -= 0.2; signals.push('MA-'); }
-  }
+  if (maS && maL) { if (maS > maL) { score += 0.2; signals.push('MA+'); } else { score -= 0.2; signals.push('MA-'); } }
 
-  // Momentum component
-  if (mom > risk.momThreshold) { score += 0.25; signals.push(`Mom+${(mom*100).toFixed(1)}%`); }
-  else if (mom < -risk.momThreshold) { score -= 0.15; signals.push(`Mom${(mom*100).toFixed(1)}%`); }
+  if (mom > risk.momThreshold) { score += 0.25; signals.push('Mom+' + (mom * 100).toFixed(1) + '%'); }
+  else if (mom < -risk.momThreshold) { score -= 0.15; signals.push('Mom' + (mom * 100).toFixed(1) + '%'); }
 
-  // Mean reversion component
-  if (zScore < -MEAN_REV_THRESHOLD) { score += 0.2; signals.push(`MR z=${zScore.toFixed(1)}`); }
-  else if (zScore > MEAN_REV_THRESHOLD) { score -= 0.15; signals.push(`MR z=${zScore.toFixed(1)}`); }
+  if (zScore < -MEAN_REV_THRESHOLD) { score += 0.2; signals.push('MR z=' + zScore.toFixed(1)); }
+  else if (zScore > MEAN_REV_THRESHOLD) { score -= 0.15; signals.push('MR z=' + zScore.toFixed(1)); }
 
-  // VWAP component
-  if (vwap) {
-    if (price < vwap * 0.99) { score += 0.1; signals.push('<VWAP'); }
-    else if (price > vwap * 1.01) { score -= 0.05; signals.push('>VWAP'); }
-  }
+  if (vwap) { if (price < vwap * 0.99) { score += 0.1; signals.push('<VWAP'); } else if (price > vwap * 1.01) { score -= 0.05; signals.push('>VWAP'); } }
 
   return {score: Math.max(-1, Math.min(1, score)), signals};
 }
@@ -570,25 +511,22 @@ function calcComposite(prices, risk) {
 function getRisk() { return RISK_PROFILES[document.getElementById('riskLevel').value]; }
 
 function evaluate() {
-  if (!running) return;
+  if (!botRunning) return;
   const risk = getRisk();
   const totalValue = getPortfolioValue();
   const buySignals = [];
 
-  const visibleAssets = getVisibleAssets();
-
-  for (const asset of visibleAssets) {
+  for (const asset of ALL_ASSETS) {
     const hist = priceHistory[asset.id] || [];
     if (hist.length < MIN_HISTORY) continue;
     const price = currentPrices[asset.id];
     if (!price) continue;
-    const hasPos = positions.some(p => p.asset === asset.id);
+    const hasPosition = positions.some(p => p.asset === asset.id);
 
-    // --- Individual strategy signals ---
     const rsi = calcRSI(hist);
     const maS = calcMA(hist, MA_SHORT);
     const maL = calcMA(hist, MA_LONG);
-    const prevHist = hist.slice(0,-1);
+    const prevHist = hist.slice(0, -1);
     const prevS = calcMA(prevHist, MA_SHORT);
     const prevL = calcMA(prevHist, MA_LONG);
     const mom = calcMomentum(hist);
@@ -596,90 +534,78 @@ function evaluate() {
     const vwap = calcVWAP(hist);
 
     // RSI
-    if (rsi < risk.rsiOversold && !hasPos) {
-      buySignals.push({asset:asset.id, sym:asset.sym, strategy:'RSI', strength:(risk.rsiOversold-rsi)/risk.rsiOversold,
-        reason:`RSI ${rsi.toFixed(1)} oversold`});
-    } else if (rsi > risk.rsiOverbought && hasPos) {
-      const pos = positions.find(p=>p.asset===asset.id);
+    if (rsi < risk.rsiOversold && !hasPosition) {
+      buySignals.push({asset: asset.id, sym: asset.sym, strategy: 'RSI', strength: (risk.rsiOversold - rsi) / risk.rsiOversold, reason: `RSI ${rsi.toFixed(1)} oversold`});
+    } else if (rsi > risk.rsiOverbought && hasPosition) {
+      const pos = positions.find(p => p.asset === asset.id);
       if (pos) sell(pos, price, 'RSI', `RSI ${rsi.toFixed(1)} overbought`);
     }
 
     // MA Crossover
     if (maS && maL && prevS && prevL) {
-      if (prevS <= prevL && maS > maL && !hasPos) {
-        buySignals.push({asset:asset.id, sym:asset.sym, strategy:'MA', strength:Math.min((maS-maL)/maL*20,1),
-          reason:`MA${MA_SHORT} crossed above MA${MA_LONG}`});
+      if (prevS <= prevL && maS > maL && !hasPosition) {
+        buySignals.push({asset: asset.id, sym: asset.sym, strategy: 'MA', strength: Math.min((maS - maL) / maL * 20, 1), reason: `MA${MA_SHORT} crossed above MA${MA_LONG}`});
       }
-      if (prevS >= prevL && maS < maL && hasPos) {
-        const pos = positions.find(p=>p.asset===asset.id);
+      if (prevS >= prevL && maS < maL && hasPosition) {
+        const pos = positions.find(p => p.asset === asset.id);
         if (pos) sell(pos, price, 'MA', `MA${MA_SHORT} crossed below MA${MA_LONG}`);
       }
     }
 
     // Momentum
-    if (mom > risk.momThreshold && !hasPos) {
-      buySignals.push({asset:asset.id, sym:asset.sym, strategy:'Momentum', strength:Math.min(mom/(risk.momThreshold*3),1),
-        reason:`Momentum +${(mom*100).toFixed(1)}%`});
+    if (mom > risk.momThreshold && !hasPosition) {
+      buySignals.push({asset: asset.id, sym: asset.sym, strategy: 'Momentum', strength: Math.min(mom / (risk.momThreshold * 3), 1), reason: `Momentum +${(mom * 100).toFixed(1)}%`});
     }
 
     // Mean Reversion
-    if (zScore < -MEAN_REV_THRESHOLD && !hasPos) {
-      buySignals.push({asset:asset.id, sym:asset.sym, strategy:'MeanRev', strength:Math.min(Math.abs(zScore)/3,1),
-        reason:`Z-score ${zScore.toFixed(2)} (mean reversion)`});
-    } else if (zScore > MEAN_REV_THRESHOLD && hasPos) {
-      const pos = positions.find(p=>p.asset===asset.id);
+    if (zScore < -MEAN_REV_THRESHOLD && !hasPosition) {
+      buySignals.push({asset: asset.id, sym: asset.sym, strategy: 'MeanRev', strength: Math.min(Math.abs(zScore) / 3, 1), reason: `Z-score ${zScore.toFixed(2)} (mean reversion)`});
+    } else if (zScore > MEAN_REV_THRESHOLD && hasPosition) {
+      const pos = positions.find(p => p.asset === asset.id);
       if (pos) sell(pos, price, 'MeanRev', `Z-score ${zScore.toFixed(2)} reverted`);
     }
 
     // VWAP
-    if (vwap && price < vwap * 0.985 && !hasPos) {
-      buySignals.push({asset:asset.id, sym:asset.sym, strategy:'VWAP', strength:Math.min((vwap-price)/price*30,1),
-        reason:`Price ${((1-price/vwap)*100).toFixed(1)}% below VWAP`});
-    } else if (vwap && price > vwap * 1.015 && hasPos) {
-      const pos = positions.find(p=>p.asset===asset.id);
-      if (pos) sell(pos, price, 'VWAP', `Price ${(((price/vwap)-1)*100).toFixed(1)}% above VWAP`);
+    if (vwap && price < vwap * 0.985 && !hasPosition) {
+      buySignals.push({asset: asset.id, sym: asset.sym, strategy: 'VWAP', strength: Math.min((vwap - price) / price * 30, 1), reason: `Price ${((1 - price / vwap) * 100).toFixed(1)}% below VWAP`});
+    } else if (vwap && price > vwap * 1.015 && hasPosition) {
+      const pos = positions.find(p => p.asset === asset.id);
+      if (pos) sell(pos, price, 'VWAP', `Price ${(((price / vwap) - 1) * 100).toFixed(1)}% above VWAP`);
     }
 
-    // Composite signal — strongest buy signal
+    // Composite
     const comp = calcComposite(hist, risk);
-    if (comp.score > 0.2 && !hasPos) {
-      buySignals.push({asset:asset.id, sym:asset.sym, strategy:'Composite', strength:comp.score,
-        reason:`Composite score ${comp.score.toFixed(2)} [${comp.signals.join(', ')}]`});
+    if (comp.score > 0.2 && !hasPosition) {
+      buySignals.push({asset: asset.id, sym: asset.sym, strategy: 'Composite', strength: comp.score, reason: `Composite score ${comp.score.toFixed(2)} [${comp.signals.join(', ')}]`});
     }
   }
 
-  // --- Stop-Loss, Take-Profit, Trailing Stop ---
+  // Stop-Loss, Take-Profit, Trailing Stop
   for (const pos of [...positions]) {
     const price = currentPrices[pos.asset];
     if (!price) continue;
     const pnlPct = (price - pos.entryPrice) / pos.entryPrice;
 
-    // Update high water mark for trailing stop
-    if (price > (pos.highPrice || pos.entryPrice)) {
-      pos.highPrice = price;
-    }
-
-    // Trailing stop: if price drops trailStop% from its high since entry
+    if (price > (pos.highPrice || pos.entryPrice)) pos.highPrice = price;
     const highPrice = pos.highPrice || pos.entryPrice;
     const dropFromHigh = (price - highPrice) / highPrice;
 
     if (pnlPct <= risk.stopLoss) {
-      sell(pos, price, 'StopLoss', `Stop-loss at ${(pnlPct*100).toFixed(1)}%`);
+      sell(pos, price, 'StopLoss', `Stop-loss at ${(pnlPct * 100).toFixed(1)}%`);
     } else if (pnlPct >= risk.takeProfit) {
-      sell(pos, price, 'TakeProfit', `Take-profit at +${(pnlPct*100).toFixed(1)}%`);
+      sell(pos, price, 'TakeProfit', `Take-profit at +${(pnlPct * 100).toFixed(1)}%`);
     } else if (pnlPct > 0.02 && dropFromHigh < -risk.trailStop) {
-      // Only activate trailing stop if we're at least 2% up
-      sell(pos, price, 'TrailStop', `Trail-stop: ${(dropFromHigh*100).toFixed(1)}% from high`);
+      sell(pos, price, 'TrailStop', `Trail-stop: ${(dropFromHigh * 100).toFixed(1)}% from high`);
     }
   }
 
-  // Execute buy signals — strongest first
-  buySignals.sort((a,b) => b.strength - a.strength);
+  // Execute buys — strongest first
+  buySignals.sort((a, b) => b.strength - a.strength);
   for (const sig of buySignals) {
     if (positions.length >= risk.maxPositions) break;
     if (positions.some(p => p.asset === sig.asset)) continue;
     const maxInv = totalValue * risk.maxPosPct;
-    const amount = Math.min(maxInv, cash * 0.97); // Deploy almost all available cash
+    const amount = Math.min(maxInv, cash * 0.97);
     if (amount < 5) continue;
     buy(sig.asset, sig.sym, amount, sig.strategy, sig.reason);
   }
@@ -690,8 +616,8 @@ function buy(assetId, sym, amount, strategy, reason) {
   if (!price || amount <= 0 || amount > cash) return;
   const qty = amount / price;
   cash -= amount;
-  positions.push({id:++tradeIdCtr, asset:assetId, sym, qty, entryPrice:price, highPrice:price, strategy, time:new Date()});
-  tradeLog.unshift({id:tradeIdCtr, type:'BUY', asset:assetId, sym, price, qty, value:amount, pnl:null, strategy, reason, time:new Date()});
+  positions.push({id: ++tradeIdCtr, asset: assetId, sym, qty, entryPrice: price, highPrice: price, strategy, time: new Date()});
+  tradeLog.unshift({id: tradeIdCtr, type: 'BUY', asset: assetId, sym, price, qty, value: amount, pnl: null, strategy, reason, time: new Date()});
 }
 
 function sell(pos, price, strategy, reason) {
@@ -701,16 +627,15 @@ function sell(pos, price, strategy, reason) {
   cash += value;
   positions = positions.filter(p => p.id !== pos.id);
 
-  // Track stats
   [strategy, pos.strategy].forEach(s => {
-    if (!stratStats[s]) stratStats[s] = {trades:0,wins:0,pnl:0};
+    if (!stratStats[s]) stratStats[s] = {trades: 0, wins: 0, pnl: 0};
     stratStats[s].trades++;
     stratStats[s].pnl += pnl;
     if (pnl > 0) stratStats[s].wins++;
   });
   if (pnl > bestTradeAmt) bestTradeAmt = pnl;
 
-  tradeLog.unshift({id:++tradeIdCtr, type:'SELL', asset:pos.asset, sym:pos.sym, price, qty:pos.qty, value, pnl, strategy, reason, time:new Date()});
+  tradeLog.unshift({id: ++tradeIdCtr, type: 'SELL', asset: pos.asset, sym: pos.sym, price, qty: pos.qty, value, pnl, strategy, reason, time: new Date()});
 }
 
 // =============================================================================
@@ -728,7 +653,7 @@ function getInvested() {
 }
 
 // =============================================================================
-// TAB FILTERING
+// TABS
 // =============================================================================
 function getVisibleAssets() {
   if (activeTab === 'crypto') return CRYPTO_ASSETS;
@@ -738,17 +663,19 @@ function getVisibleAssets() {
 function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => { if(t.textContent.toLowerCase().includes(tab==='all'?'all':tab)) t.classList.add('active'); });
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(tab === 'all' ? 'all' : tab)) t.classList.add('active');
+  });
   renderTicker();
 }
 
 // =============================================================================
-// UI RENDERING
+// RENDERING
 // =============================================================================
 function renderTicker() {
   const grid = document.getElementById('tickerGrid');
   const visible = getVisibleAssets();
-  document.getElementById('assetCount').textContent = `${visible.length} assets`;
+  document.getElementById('assetCount').textContent = visible.length + ' assets';
   let h = '';
   for (const a of visible) {
     const price = currentPrices[a.id];
@@ -757,23 +684,22 @@ function renderTicker() {
     const up = chg >= 0;
     const prev = lastPrices[a.id] || price;
     const flash = price > prev ? 'fg' : price < prev ? 'fr' : '';
-    const typeBg = a.type==='crypto'?'var(--purple-bg)':a.type==='etf'?'var(--blue-bg)':a.type==='commodity'?'var(--yellow-bg)':'var(--cyan-bg)';
-    const typeCol = a.type==='crypto'?'var(--purple)':a.type==='etf'?'var(--blue)':a.type==='commodity'?'var(--yellow)':'var(--cyan)';
+    const typeBg = a.type === 'crypto' ? 'var(--purple-bg)' : a.type === 'etf' ? 'var(--blue-bg)' : a.type === 'commodity' ? 'var(--yellow-bg)' : 'var(--cyan-bg)';
+    const typeCol = a.type === 'crypto' ? 'var(--purple)' : a.type === 'etf' ? 'var(--blue)' : a.type === 'commodity' ? 'var(--yellow)' : 'var(--cyan)';
 
-    // Signal indicator
     const hist = priceHistory[a.id] || [];
     let sigHtml = '';
     if (hist.length >= MIN_HISTORY) {
       const risk = getRisk();
       const comp = calcComposite(hist, risk);
-      if (comp.score > 0.3) sigHtml = `<div class="tkr-signal"><span class="sig-dot" style="background:var(--green)"></span>Buy signal</div>`;
-      else if (comp.score < -0.3) sigHtml = `<div class="tkr-signal"><span class="sig-dot" style="background:var(--red)"></span>Sell signal</div>`;
+      if (comp.score > 0.3) sigHtml = '<div class="tkr-signal"><span class="sig-dot" style="background:var(--green)"></span>Buy signal</div>';
+      else if (comp.score < -0.3) sigHtml = '<div class="tkr-signal"><span class="sig-dot" style="background:var(--red)"></span>Sell signal</div>';
     }
 
     h += `<div class="tkr ${flash}">
       <div class="tkr-top"><span class="tkr-sym">${a.sym}</span><span class="tkr-type" style="background:${typeBg};color:${typeCol}">${a.type}</span></div>
       <div class="tkr-price">$${fmtPrice(price)}</div>
-      <div class="tkr-chg" style="color:${up?'var(--green)':'var(--red)'}">${up?'▲':'▼'} ${Math.abs(chg).toFixed(2)}%</div>
+      <div class="tkr-chg" style="color:${up ? 'var(--green)' : 'var(--red)'}">${up ? '▲' : '▼'} ${Math.abs(chg).toFixed(2)}%</div>
       ${sigHtml}
     </div>`;
   }
@@ -787,50 +713,49 @@ function renderPortfolio() {
   const pct = (pnl / STARTING_BALANCE) * 100;
   const up = pnl >= 0;
 
-  // Drawdown tracking
   if (tv > peakValue) peakValue = tv;
   const dd = (tv - peakValue) / peakValue;
   if (dd < maxDrawdown) maxDrawdown = dd;
 
-  document.getElementById('portfolioValue').textContent = '$' + tv.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('portfolioValue').textContent = '$' + tv.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   document.getElementById('portfolioValue').style.color = up ? 'var(--green)' : 'var(--red)';
   const ce = document.getElementById('portfolioChange');
-  ce.textContent = `${up?'+':''}$${pnl.toFixed(2)} (${up?'+':''}${pct.toFixed(2)}%)`;
+  ce.textContent = `${up ? '+' : ''}$${pnl.toFixed(2)} (${up ? '+' : ''}${pct.toFixed(2)}%)`;
   ce.style.color = up ? 'var(--green)' : 'var(--red)';
-  document.getElementById('cashVal').textContent = '$'+cash.toFixed(2);
-  document.getElementById('invVal').textContent = '$'+inv.toFixed(2);
+  document.getElementById('cashVal').textContent = '$' + cash.toFixed(2);
+  document.getElementById('invVal').textContent = '$' + inv.toFixed(2);
   document.getElementById('totalTrades').textContent = tradeLog.length;
-  document.getElementById('maxDD').textContent = maxDrawdown < 0 ? (maxDrawdown*100).toFixed(1)+'%' : '—';
+  document.getElementById('maxDD').textContent = maxDrawdown < 0 ? (maxDrawdown * 100).toFixed(1) + '%' : '—';
   document.getElementById('maxDD').style.color = maxDrawdown < -0.05 ? 'var(--red)' : 'var(--text)';
-  document.getElementById('bestTrade').textContent = bestTradeAmt > 0 ? '+$'+bestTradeAmt.toFixed(2) : '—';
+  document.getElementById('bestTrade').textContent = bestTradeAmt > 0 ? '+$' + bestTradeAmt.toFixed(2) : '—';
   document.getElementById('bestTrade').style.color = 'var(--green)';
 
-  const sells = tradeLog.filter(t=>t.type==='SELL'&&t.pnl!==null);
+  const sells = tradeLog.filter(t => t.type === 'SELL' && t.pnl !== null);
   if (sells.length) {
-    const wr = sells.filter(t=>t.pnl>0).length / sells.length;
-    document.getElementById('winRate').textContent = (wr*100).toFixed(0)+'%';
-    document.getElementById('winRate').style.color = wr >= .5 ? 'var(--green)' : 'var(--red)';
+    const wr = sells.filter(t => t.pnl > 0).length / sells.length;
+    document.getElementById('winRate').textContent = (wr * 100).toFixed(0) + '%';
+    document.getElementById('winRate').style.color = wr >= 0.5 ? 'var(--green)' : 'var(--red)';
   }
 
-  // Progress
-  const pp = Math.min((tv/GOAL)*100,100);
-  document.getElementById('progPct').textContent = pp.toFixed(1)+'%';
-  document.getElementById('progFill').style.width = Math.max(pp,.5)+'%';
-  const rem = Math.max(GOAL-tv,0);
-  document.getElementById('progTxt').textContent = rem > 0 ? '$'+rem.toLocaleString('en-US',{minimumFractionDigits:2})+' to go' : 'GOAL REACHED!';
+  const pp = Math.min((tv / GOAL) * 100, 100);
+  document.getElementById('progPct').textContent = pp.toFixed(1) + '%';
+  document.getElementById('progFill').style.width = Math.max(pp, 0.5) + '%';
+  const rem = Math.max(GOAL - tv, 0);
+  document.getElementById('progTxt').textContent = rem > 0 ? '$' + rem.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' to go' : 'GOAL REACHED!';
 
-  // Chart
-  portfolioHistory.push({time:new Date(),value:tv});
+  // Chart update
+  portfolioHistory.push({time: new Date(), value: tv});
   if (portfolioHistory.length > 600) portfolioHistory.shift();
-  chart.data.labels = portfolioHistory.map(p=>fmtTime(p.time));
-  chart.data.datasets[0].data = portfolioHistory.map(p=>p.value);
+  chart.data.labels = portfolioHistory.map(p => fmtTime(p.time));
+  chart.data.datasets[0].data = portfolioHistory.map(p => p.value);
   chart.data.datasets[0].borderColor = up ? '#10b981' : '#f43f5e';
   chart.data.datasets[0].backgroundColor = up ? 'rgba(16,185,129,.06)' : 'rgba(244,63,94,.06)';
-  // Zoom Y-axis tightly to actual data so small moves are visible
-  const vals = portfolioHistory.map(p=>p.value);
+
+  // Zoom Y-axis tightly to actual data
+  const vals = portfolioHistory.map(p => p.value);
   const minV = Math.min(...vals);
   const maxV = Math.max(...vals);
-  const pad = Math.max((maxV - minV) * 0.15, maxV * 0.005); // At least 0.5% padding
+  const pad = Math.max((maxV - minV) * 0.15, maxV * 0.005);
   chart.options.scales.y.min = Math.max(0, minV - pad);
   chart.options.scales.y.max = maxV + pad;
   chart.update('none');
@@ -845,13 +770,13 @@ function renderPositions() {
     const price = currentPrices[p.asset] || p.entryPrice;
     const val = p.qty * price;
     const pnl = val - p.qty * p.entryPrice;
-    const pct = ((price-p.entryPrice)/p.entryPrice)*100;
+    const pct = ((price - p.entryPrice) / p.entryPrice) * 100;
     const up = pnl >= 0;
     const risk = getRisk();
     const sl = p.entryPrice * (1 + risk.stopLoss);
     const tp = p.entryPrice * (1 + risk.takeProfit);
     h += `<div class="pos">
-      <div class="pos-top"><span class="pos-sym">${p.sym}</span><span class="pos-pnl" style="color:${up?'var(--green)':'var(--red)'}">${up?'+':''}$${pnl.toFixed(2)} (${up?'+':''}${pct.toFixed(1)}%)</span></div>
+      <div class="pos-top"><span class="pos-sym">${p.sym}</span><span class="pos-pnl" style="color:${up ? 'var(--green)' : 'var(--red)'}">${up ? '+' : ''}$${pnl.toFixed(2)} (${up ? '+' : ''}${pct.toFixed(1)}%)</span></div>
       <div class="pos-det"><span>${p.qty.toFixed(6)}</span><span>Entry $${fmtPrice(p.entryPrice)}</span><span>Now $${fmtPrice(price)}</span></div>
       <div class="pos-det"><span>Val $${val.toFixed(2)}</span><span>SL $${fmtPrice(sl)}</span><span>TP $${fmtPrice(tp)}</span></div>
       <div class="pos-strat"><span class="stag stag-${p.strategy.toLowerCase()}">${p.strategy}</span> ${fmtTime(p.time)}</div>
@@ -864,19 +789,13 @@ function renderLog() {
   const c = document.getElementById('logBody');
   document.getElementById('logCount').textContent = tradeLog.length + ' trades';
   if (!tradeLog.length) { c.innerHTML = '<div class="empty">No trades yet &mdash; press START</div>'; return; }
-  let h = `<table class="tlog"><thead><tr><th>Time</th><th>Type</th><th>Asset</th><th>Price</th><th>Qty</th><th>Value</th><th>P&amp;L</th><th>Strategy</th></tr></thead><tbody>`;
-  for (const t of tradeLog.slice(0,80)) {
-    const sc = t.strategy.toLowerCase().replace(/\s/g,'');
-    h += `<tr>
-      <td>${fmtTime(t.time)}</td>
-      <td class="c-${t.type.toLowerCase()}">${t.type}</td>
-      <td>${t.sym}</td>
-      <td>$${fmtPrice(t.price)}</td>
-      <td>${t.qty.toFixed(6)}</td>
-      <td>$${t.value.toFixed(2)}</td>
-      <td style="color:${t.pnl===null?'var(--text3)':t.pnl>=0?'var(--green)':'var(--red)'}">${t.pnl===null?'—':`${t.pnl>=0?'+':''}$${t.pnl.toFixed(2)}`}</td>
-      <td><span class="stag stag-${sc}">${t.strategy}</span></td>
-    </tr>`;
+  let h = '<table class="tlog"><thead><tr><th>Time</th><th>Type</th><th>Asset</th><th>Price</th><th>Qty</th><th>Value</th><th>P&L</th><th>Strategy</th></tr></thead><tbody>';
+  for (const t of tradeLog.slice(0, 80)) {
+    const sc = t.strategy.toLowerCase().replace(/\s/g, '');
+    h += `<tr><td>${fmtTime(t.time)}</td><td class="c-${t.type.toLowerCase()}">${t.type}</td><td>${t.sym}</td>
+      <td>$${fmtPrice(t.price)}</td><td>${t.qty.toFixed(6)}</td><td>$${t.value.toFixed(2)}</td>
+      <td style="color:${t.pnl === null ? 'var(--text3)' : t.pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${t.pnl === null ? '—' : `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}`}</td>
+      <td><span class="stag stag-${sc}">${t.strategy}</span></td></tr>`;
   }
   h += '</tbody></table>';
   c.innerHTML = h;
@@ -885,10 +804,10 @@ function renderLog() {
 function renderStrategies() {
   const c = document.getElementById('stratBody');
   const defs = [
-    {k:'RSI',name:'RSI',col:'var(--purple)',desc:`Oversold/Overbought`},
+    {k:'RSI',name:'RSI',col:'var(--purple)',desc:'Oversold/Overbought'},
     {k:'MA',name:'MA Crossover',col:'var(--cyan)',desc:`MA${MA_SHORT} × MA${MA_LONG}`},
     {k:'Momentum',name:'Momentum',col:'var(--orange)',desc:'Breakout detection'},
-    {k:'MeanRev',name:'Mean Reversion',col:'var(--yellow)',desc:`Z-score reversion`},
+    {k:'MeanRev',name:'Mean Reversion',col:'var(--yellow)',desc:'Z-score reversion'},
     {k:'VWAP',name:'VWAP',col:'var(--blue)',desc:'Volume-weighted price'},
     {k:'Composite',name:'Composite',col:'var(--gold)',desc:'Multi-signal blend'},
     {k:'StopLoss',name:'Stop-Loss',col:'var(--red)',desc:'Auto risk exit'},
@@ -897,26 +816,16 @@ function renderStrategies() {
   ];
   let h = '';
   for (const d of defs) {
-    const s = stratStats[d.k] || {trades:0,wins:0,pnl:0};
-    const wr = s.trades > 0 ? (s.wins/s.trades*100).toFixed(0)+'%' : '—';
-    h += `<div class="strat-item">
-      <div><div class="strat-name" style="color:${d.col}">${d.name}</div><div class="strat-desc">${d.desc}</div></div>
-      <div class="strat-right">
-        <div class="strat-trades">${s.trades} trades</div>
-        <div class="strat-wr">WR: ${wr} | <span style="color:${s.pnl>=0?'var(--green)':'var(--red)'}">${s.pnl>=0?'+':''}$${s.pnl.toFixed(2)}</span></div>
-      </div>
-    </div>`;
+    const s = stratStats[d.k] || {trades: 0, wins: 0, pnl: 0};
+    const wr = s.trades > 0 ? (s.wins / s.trades * 100).toFixed(0) + '%' : '—';
+    h += `<div class="strat-item"><div><div class="strat-name" style="color:${d.col}">${d.name}</div><div class="strat-desc">${d.desc}</div></div>
+      <div class="strat-right"><div class="strat-trades">${s.trades} trades</div>
+      <div class="strat-wr">WR: ${wr} | <span style="color:${s.pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${s.pnl >= 0 ? '+' : ''}$${s.pnl.toFixed(2)}</span></div></div></div>`;
   }
   c.innerHTML = h;
 }
 
-function renderAll() {
-  renderTicker();
-  renderPortfolio();
-  renderPositions();
-  renderLog();
-  renderStrategies();
-}
+function renderAll() { renderTicker(); renderPortfolio(); renderPositions(); renderLog(); renderStrategies(); }
 
 // =============================================================================
 // BOT CONTROL
@@ -924,15 +833,16 @@ function renderAll() {
 async function tick() {
   const ok = await fetchCrypto();
   tickStockSim();
-  if (running) evaluate();
+  if (botRunning) evaluate();
   renderAll();
+  document.getElementById('lastUpdate').textContent = 'Updated ' + fmtTime(new Date());
 }
 
 function toggleBot() {
-  running = !running;
+  botRunning = !botRunning;
   const btn = document.getElementById('toggleBtn');
   const badge = document.getElementById('statusBadge');
-  if (running) {
+  if (botRunning) {
     btn.innerHTML = '&#9646;&#9646; PAUSE'; btn.className = 'btn btn-stop';
     badge.textContent = 'RUNNING'; badge.className = 'badge badge-run';
     startLoop();
@@ -944,18 +854,17 @@ function toggleBot() {
 }
 
 function startLoop() { stopLoop(); tick(); timer = setInterval(tick, parseInt(document.getElementById('refreshRate').value)); }
-function stopLoop() { if(timer){clearInterval(timer);timer=null} }
+function stopLoop() { if (timer) { clearInterval(timer); timer = null; } }
 
 function resetBot() {
   if (!confirm('Reset everything and start over with $1,000?')) return;
-  running = false; stopLoop();
-  cash = STARTING_BALANCE;
-  positions = []; tradeLog = [];
+  botRunning = false; stopLoop();
+  cash = STARTING_BALANCE; positions = []; tradeLog = [];
   priceHistory = {}; currentPrices = {}; lastPrices = {}; priceChanges = {};
-  portfolioHistory = [{time:new Date(),value:STARTING_BALANCE}];
+  portfolioHistory = [{time: new Date(), value: STARTING_BALANCE}];
   tradeIdCtr = 0; apiErrors = 0; peakValue = STARTING_BALANCE; maxDrawdown = 0; bestTradeAmt = 0;
-  stockSimInited = false; stockSimPrices = {}; cryptoStartPrices = {};
-  STRATS.forEach(s => stratStats[s] = {trades:0,wins:0,pnl:0});
+  stockSimInited = false; stockSimPrices = {};
+  STRATS.forEach(s => stratStats[s] = {trades: 0, wins: 0, pnl: 0});
 
   chart.data.labels = [fmtTime(new Date())];
   chart.data.datasets[0].data = [STARTING_BALANCE];
@@ -970,22 +879,29 @@ function resetBot() {
   renderAll();
 }
 
-document.getElementById('refreshRate').addEventListener('change', () => { if(running) startLoop(); });
+document.getElementById('refreshRate').addEventListener('change', () => { if (botRunning) startLoop(); });
 
 // =============================================================================
 // HELPERS
 // =============================================================================
-function fmtPrice(p){if(p>=1e3)return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});if(p>=1)return p.toFixed(2);if(p>=.01)return p.toFixed(4);return p.toFixed(6)}
-function fmtTime(d){return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})}
-function setDot(id,ok){document.getElementById(id).style.background=ok?'var(--green)':'var(--red)'}
+function fmtPrice(p) {
+  if (p >= 1000) return p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  if (p >= 1) return p.toFixed(2);
+  if (p >= 0.01) return p.toFixed(4);
+  return p.toFixed(6);
+}
+function fmtTime(d) { return d.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}); }
+function setDot(id, ok) { document.getElementById(id).style.background = ok ? 'var(--green)' : 'var(--red)'; }
 
 // Clock
-setInterval(()=>{document.getElementById('clockDisplay').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})},1000);
+setInterval(() => {
+  document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true});
+}, 1000);
 
 // =============================================================================
 // INIT
 // =============================================================================
-(async function(){
+(async function() {
   initStockSim();
   renderAll();
   await fetchCrypto();

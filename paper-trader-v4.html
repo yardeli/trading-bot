@@ -353,7 +353,7 @@ const MIN_HIST = 3; // Ultra-fast start for tick data
 const RISK = {
   moderate:   {maxPosPct:.45,maxPos:5,sl:-.015,tp:.045,trail:.010,rsiLo:40,rsiHi:60,momTh:.003,optPct:.30,optMaxPos:4,minHold:6},
   aggressive: {maxPosPct:.55,maxPos:7,sl:-.020,tp:.060,trail:.015,rsiLo:42,rsiHi:58,momTh:.002,optPct:.40,optMaxPos:6,minHold:4},
-  yolo:       {maxPosPct:.85,maxPos:15,sl:-.035,tp:.10,trail:.025,rsiLo:46,rsiHi:54,momTh:.0005,optPct:.65,optMaxPos:10,minHold:1},
+  yolo:       {maxPosPct:.85,maxPos:15,sl:-.035,tp:.10,trail:.025,rsiLo:44,rsiHi:56,momTh:.0005,optPct:.65,optMaxPos:10,minHold:5},
 };
 
 const MA_S=3, MA_L=8, MOM_P=5, MR_TH=0.5, VWAP_P=6;
@@ -919,13 +919,15 @@ async function fetchStocks(){
   if(now-lastStockFetch<8000) return;
   lastStockFetch=now;
 
+  // Always fetch stock prices (even outside market hours for display)
+  // Finnhub returns last close price outside hours
   try{
     const results=await Promise.allSettled(STOCKS.map(async a=>{
       const url=`https://finnhub.io/api/v1/quote?symbol=${a.sym}&token=${FINNHUB_KEY}`;
       const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
-      if(!r.ok) return null;
+      if(!r.ok){console.warn(`Finnhub ${a.sym}: HTTP ${r.status}`);return null;}
       const d=await r.json();
-      if(!d.c||d.c===0) return null;
+      if(!d.c||d.c===0){console.warn(`Finnhub ${a.sym}: no price data`,d);return null;}
       return{id:a.id,price:d.c,prevClose:d.pc};
     }));
     let ok=0;
@@ -940,7 +942,8 @@ async function fetchStocks(){
       if(priceHistory[id].length>300)priceHistory[id].shift();
       ok++;
     }
-    if(ok>0){stockApiOk=true;setDot('dotStocks',true);return;}
+    if(ok>0){stockApiOk=true;setDot('dotStocks',true);console.log(`Stocks: ${ok}/${STOCKS.length} prices loaded`);return;}
+    else{console.warn('Finnhub: all requests returned no data');}
   }catch(e){console.warn('Finnhub fetch failed:',e.message);}
 
   stockApiOk=false;
@@ -1098,14 +1101,24 @@ function evaluate(){
     // Signal strength multiplier — crypto signals get boosted when stocks are closed
     const sigBoost=isCrypto?cryptoBoost:1.0;
 
+    // ===== CROSS-STRATEGY SELL PROTECTION =====
+    // A different strategy can only sell a position after 3x minHold ticks
+    // Same strategy can sell after normal minHold
+    function canSell(p, sellStrat){
+      if(!p) return false;
+      const age = tickCount - (p.entryTick||0);
+      if(p.strategy === sellStrat) return age >= risk.minHold;
+      return age >= risk.minHold * 3; // Cross-strategy needs 3x longer hold
+    }
+
     // ===== STOCK / CRYPTO SIGNALS =====
     if(rsi<risk.rsiLo&&!hasStockPos)
       buys.push({asset:asset.id,sym:asset.sym,strat:'RSI',str:(risk.rsiLo-rsi)/risk.rsiLo*sigBoost,reason:`RSI ${rsi.toFixed(0)} oversold${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
-    else if(rsi>risk.rsiHi&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'RSI',`RSI ${rsi.toFixed(0)} overbought`);}
+    else if(rsi>risk.rsiHi&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(canSell(p,'RSI'))sell(p,price,'RSI',`RSI ${rsi.toFixed(0)} overbought`);}
 
     if(maS&&maL&&pS&&pL){
       if(pS<=pL&&maS>maL&&!hasStockPos)buys.push({asset:asset.id,sym:asset.sym,strat:'MA',str:Math.min((maS-maL)/maL*25,1)*sigBoost,reason:`Golden cross${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
-      if(pS>=pL&&maS<maL&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'MA','Death cross');}
+      if(pS>=pL&&maS<maL&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(canSell(p,'MA'))sell(p,price,'MA','Death cross');}
     }
 
     if(mom>risk.momTh&&!hasStockPos)
@@ -1113,7 +1126,7 @@ function evaluate(){
 
     if(z<-MR_TH&&!hasStockPos)
       buys.push({asset:asset.id,sym:asset.sym,strat:'MeanRev',str:Math.min(Math.abs(z)/2,1)*sigBoost,reason:`Z=${z.toFixed(1)}${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
-    else if(z>MR_TH&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'MeanRev',`Z=${z.toFixed(1)} reverted`);}
+    else if(z>MR_TH&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(canSell(p,'MeanRev'))sell(p,price,'MeanRev',`Z=${z.toFixed(1)} reverted`);}
 
     if(vwap&&price<vwap*.999&&!hasStockPos)
       buys.push({asset:asset.id,sym:asset.sym,strat:'VWAP',str:Math.min((vwap-price)/price*120,1)*sigBoost,reason:`${((1-price/vwap)*100).toFixed(2)}% < VWAP${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
@@ -1126,7 +1139,7 @@ function evaluate(){
     if(stoch){
       if(stoch.k<30&&stoch.d<35&&!hasStockPos)
         buys.push({asset:asset.id,sym:asset.sym,strat:'Stochastic',str:((35-stoch.k)/35)*sigBoost,reason:`Stoch %K=${stoch.k.toFixed(0)} %D=${stoch.d.toFixed(0)} oversold${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
-      else if(stoch.k>70&&stoch.d>65&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Stochastic',`Stoch %K=${stoch.k.toFixed(0)} overbought`);}
+      else if(stoch.k>70&&stoch.d>65&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(canSell(p,'Stochastic'))sell(p,price,'Stochastic',`Stoch %K=${stoch.k.toFixed(0)} overbought`);}
     }
 
     // ===== BOLLINGER BANDS =====
@@ -1134,7 +1147,7 @@ function evaluate(){
     if(bb){
       if(price<bb.lower&&!hasStockPos)
         buys.push({asset:asset.id,sym:asset.sym,strat:'Bollinger',str:Math.min((bb.lower-price)/price*100,1)*sigBoost,reason:`Below lower BB ($${bb.lower.toFixed(2)})${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
-      else if(price>bb.upper&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Bollinger',`Above upper BB ($${bb.upper.toFixed(2)})`);}
+      else if(price>bb.upper&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(canSell(p,'Bollinger'))sell(p,price,'Bollinger',`Above upper BB ($${bb.upper.toFixed(2)})`);}
     }
 
     // ===== ADX SOFT FILTER — barely scale down when ADX is very low =====

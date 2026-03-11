@@ -32,7 +32,17 @@
       "Bash(find C:/Users/yarden -maxdepth 4 -name \"quant*\" -type d 2>/dev/null; find C:/Users/yarden -maxdepth 4 -name \"quant*\" -type f 2>/dev/null | head -20)",
       "Bash(cd /c/Users/yarden/quant-engine-local && python main.py --no-ui --tickers SPY QQQ AAPL MSFT NVDA --years 3 2>&1)",
       "Bash(cd /c/Users/yarden/quant-engine-local && python main.py --no-ui 2>&1)",
-      "Bash(python main.py --no-ui 2>&1 | tail -30)"
+      "Bash(python main.py --no-ui 2>&1 | tail -30)",
+      "Bash(curl -s \"https://finnhub.io/api/v1/stock/candle?symbol=AAPL&resolution=5&from=1741564800&to=1741651200&token=d6o8de1r01qu09cih710d6o8de1r01qu09cih71g\" 2>&1 | head -200)",
+      "Bash(curl -s \"https://finnhub.io/api/v1/stock/candle?symbol=AAPL&resolution=D&from=1741564800&to=1741651200&token=d6o8de1r01qu09cih710d6o8de1r01qu09cih71g\" 2>&1 | head -200)",
+      "Bash(curl -s \"https://finnhub.io/api/v1/quote?symbol=AAPL&token=d6o8de1r01qu09cih710d6o8de1r01qu09cih71g\" 2>&1 | head -200)",
+      "Bash(curl -s \"https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=5m&period1=1741564800&period2=1741651200&includePrePost=false\" -H \"User-Agent: Mozilla/5.0\" 2>&1 | head -c 500)",
+      "Bash(curl -s -I \"https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=5m&range=1d\" -H \"User-Agent: Mozilla/5.0\" 2>&1 | grep -i \"access-control\")",
+      "Bash(curl -s -D - \"https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=5m&range=1d\" -H \"User-Agent: Mozilla/5.0\" 2>&1 | head -30)",
+      "Bash(curl -s \"https://api.allorigins.win/raw?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FAAPL%3Finterval%3D5m%26range%3D1d%26includePrePost%3Dfalse\" 2>&1 | head -c 300)",
+      "Bash(curl -s \"https://corsproxy.io/?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FAAPL%3Finterval%3D5m%26range%3D1d%26includePrePost%3Dfalse\" 2>&1 | head -c 300)",
+      "Bash(curl -s \"https://api.codetabs.com/v1/proxy?quest=https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=5m&range=1d&includePrePost=false\" 2>&1 | head -c 300)",
+      "Bash(curl -s \"https://api.allorigins.win/get?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FAAPL%3Finterval%3D5m%26range%3D1d%26includePrePost%3Dfalse\" 2>&1 | head -c 300)"
     ]
   }
 }

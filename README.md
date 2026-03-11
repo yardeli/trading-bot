@@ -629,3 +629,42 @@ These can all be adjusted from the web dashboard's Configure panel before runnin
 4. Brain starts pre-trained with backtest knowledge, continues learning live
 
 **New file:** `brain_export.json` — auto-generated after each backtest
+
+### v6.4 — Fix Strategy Churning & Stock Trading Debug (2026-03-11)
+
+**Problem:** Bot only traded crypto, never stocks. Strategies fought each other: MeanRev would buy an asset, then RSI immediately sold it on the next tick for $0.00 profit. This created massive churning (dozens of buy/sell pairs per minute with zero gains).
+
+**Root cause:** YOLO mode had `minHold:1` (one 6s tick) and RSI thresholds 46/54 were so tight that RSI nearly always signaled overbought on existing positions. A position opened by MeanRev on tick N would be sold by RSI on tick N+1.
+
+**Changes to `paper-trader-v4.html`:**
+- **Cross-strategy sell protection**: A position can only be sold by the *same* strategy after `minHold` ticks, but a *different* strategy must wait `3x minHold` ticks. This prevents RSI from immediately undoing MeanRev's work.
+- **YOLO minHold: 1→5** (30 seconds at 6s intervals) so positions have time to move
+- **YOLO RSI thresholds: 46/54→44/56** slightly wider to reduce false overbought signals
+- **Finnhub debug logging**: Added `console.warn` for HTTP errors, missing price data, and `console.log` for successful stock price loads — check browser DevTools console to verify stocks are loading
+
+**Result:** Eliminates the rapid buy-then-sell churning pattern. Positions now hold for a minimum of 30 seconds before any strategy can exit, and cross-strategy exits require 90 seconds.
+
+### v6.5 — Daily Strategy Backtester (2026-03-11)
+
+**Problem:** No way to test how the paper-trader's 8 strategies + brain would have performed on a specific day's real price data. The quant-engine runs multi-year daily backtests, but can't validate the paper-trader's tick-level signals against intraday data. Need a tool to gather more data on model performance.
+
+**New file: `daily-backtester.html`** — Standalone intraday backtester matching the paper-trader's theme.
+
+**Features:**
+- Fetches real intraday candles: stocks via Finnhub, crypto via Binance US (with .com fallback)
+- Replays a full day tick-by-tick through all 8 strategies (RSI, MA, Momentum, MeanRev, VWAP, Composite, Stochastic, Bollinger)
+- Imports brain from quant-engine export or native brain file (same import logic as paper-trader)
+- All paper-trader systems: ATR-based stops, Kelly sizing, circuit breakers, cross-strategy sell protection, brain weights, regime adjustments
+- Configurable: date picker, resolution (1/5/15/60 min), risk level, starting capital, asset filter (stocks/crypto/both)
+- Liquidates all positions at end-of-day for accurate P&L
+- Results dashboard: equity curve chart, performance metrics, per-strategy breakdown, full trade log
+- Brain learning updates during simulation (strategies adapt as trades execute)
+
+**Usage:**
+1. Open `daily-backtester.html` in any browser (works as file://)
+2. Optionally import a brain file (from QE or paper-trader export)
+3. Select a date, resolution, risk level, and starting capital
+4. Click "Run Backtest" — fetches data and simulates the full day
+5. Review equity curve, trade log, and strategy performance
+
+**Data sources:** Twelve Data (stocks, free API key needed — [twelvedata.com/pricing](https://twelvedata.com/pricing), 800 calls/day) + Binance US/Binance (crypto, no auth needed). Finnhub free tier doesn't support historical candles, so Twelve Data is used instead.

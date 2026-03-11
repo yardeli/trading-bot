@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sleep 10 && python -c \"\nwith open\\('README.md','r'\\) as f: c=f.read\\(\\)\nc=c.replace\\('### v5.0','### v5.1 — Fix Flat PnL: Concentrated Positions and Minimum Hold Time \\(2026-03-10\\)\\\\n\\\\n**Problem:** Trades executing but PnL near-zero. Signal whipsaw \\(bought on RSI oversold, sold 2 ticks later on RSI overbought\\) and tiny positions \\(1000 across 20 slots\\).\\\\n\\\\n**Changes:** Added minHold to prevent premature sells \\(YOLO: 5 ticks/30s\\). Concentrated positions: max 8 instead of 20, up to 65% per position. Wider thresholds: YOLO TP 5%, SL -3%, Trail 1.8%. Stop-loss still fires immediately.\\\\n\\\\n**Verified:** BTC position sold at TP +5% for +32.50. Whipsaw prevented during hold period.\\\\n\\\\n---\\\\n\\\\n### v5.0',1\\)\nwith open\\('README.md','w'\\) as f: f.write\\(c\\)\nprint\\('README updated with v5.1'\\)\n\")"
+    ]
+  }
+}

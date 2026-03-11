@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Collin & Zog Wealth Management LLC — Paper Trading Terminal v4</title>
+<title>Collin & Zog Wealth Management LLC — Paper Trading Terminal v6</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -121,6 +121,13 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
 .stag-optexpiry{background:var(--pink-bg);color:var(--pink)}
 .stag-gamma{background:var(--purple-bg);color:var(--purple)}
 .stag-straddle{background:var(--cyan-bg);color:var(--cyan)}
+.stag-stochastic{background:var(--pink-bg);color:var(--pink)}
+.stag-bollinger{background:var(--orange-bg);color:var(--orange)}
+.circuit-breaker{padding:6px 12px;border-radius:5px;font-size:10px;font-weight:700;text-align:center;margin-bottom:6px;display:none}
+.cb-warning{background:rgba(250,204,21,.15);color:var(--yellow);border:1px solid rgba(250,204,21,.3);display:block}
+.cb-derisk{background:rgba(251,146,60,.15);color:var(--orange);border:1px solid rgba(251,146,60,.3);display:block}
+.cb-reduce{background:rgba(244,63,94,.15);color:var(--red);border:1px solid rgba(244,63,94,.3);display:block}
+.cb-halt{background:rgba(244,63,94,.25);color:#ff2d55;border:1px solid rgba(244,63,94,.5);display:block;animation:fr 1s infinite}
 
 .strat-card{grid-column:3/4}
 .strat-item{padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
@@ -177,7 +184,7 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
     <div class="brand">
       <div class="brand-logo">&#10017; &#10017; &#10017; COLLIN &amp; ZOG &#10017; &#10017; &#10017;<span class="llc">&#10017; WEALTH MANAGEMENT LLC &#10017;</span></div>
       <div class="brand-divider"></div>
-      <div class="brand-product">&#10017; 24/7 Options, Equities &amp; Crypto Terminal v4 &#10017;</div>
+      <div class="brand-product">&#10017; 24/7 Options, Equities &amp; Crypto Terminal v6 &#10017;</div>
     </div>
     <div class="hdr-ctrl">
       <div id="statusBadge" class="badge badge-pause">PAUSED</div>
@@ -232,7 +239,9 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
         <div class="pm"><span class="pm-l">Best Trade</span><span class="pm-v" id="bestTrade">&mdash;</span></div>
         <div class="pm"><span class="pm-l">Drawdown</span><span class="pm-v" id="maxDD">&mdash;</span></div>
         <div class="pm"><span class="pm-l">Leverage</span><span class="pm-v" id="leverage">1.0x</span></div>
+        <div class="pm"><span class="pm-l">GARCH Vol</span><span class="pm-v" id="garchVol">&mdash;</span></div>
       </div>
+      <div class="circuit-breaker" id="circuitBreaker"></div>
     </div>
     <div class="prog-sec">
       <div class="prog-lbl"><span>$1K &rarr; $100K Challenge</span><span id="progPct">1.0%</span></div>
@@ -342,9 +351,9 @@ const GOAL = 100000;
 const MIN_HIST = 3; // Ultra-fast start for tick data
 
 const RISK = {
-  moderate:   {maxPosPct:.40,maxPos:4,sl:-.012,tp:.020,trail:.008,rsiLo:42,rsiHi:58,momTh:.003,optPct:.25,optMaxPos:4,minHold:10},
-  aggressive: {maxPosPct:.50,maxPos:6,sl:-.020,tp:.035,trail:.012,rsiLo:44,rsiHi:56,momTh:.002,optPct:.35,optMaxPos:6,minHold:8},
-  yolo:       {maxPosPct:.65,maxPos:8,sl:-.030,tp:.050,trail:.018,rsiLo:46,rsiHi:54,momTh:.001,optPct:.50,optMaxPos:8,minHold:5},
+  moderate:   {maxPosPct:.45,maxPos:5,sl:-.015,tp:.045,trail:.010,rsiLo:40,rsiHi:60,momTh:.003,optPct:.30,optMaxPos:4,minHold:6},
+  aggressive: {maxPosPct:.55,maxPos:7,sl:-.020,tp:.060,trail:.015,rsiLo:42,rsiHi:58,momTh:.002,optPct:.40,optMaxPos:6,minHold:4},
+  yolo:       {maxPosPct:.70,maxPos:10,sl:-.020,tp:.060,trail:.015,rsiLo:44,rsiHi:56,momTh:.001,optPct:.55,optMaxPos:8,minHold:3},
 };
 
 const MA_S=3, MA_L=8, MOM_P=5, MR_TH=0.5, VWAP_P=6;
@@ -357,13 +366,94 @@ let running=false, cash=STARTING, positions=[], tradeLog=[], priceHistory={}, cu
     tidCtr=0, timer=null, apiErr=0, peak=STARTING, maxDD=0, bestTr=0, activeTab='all',
     tickCount=0;
 
-const STRAT_KEYS=['RSI','MA','Momentum','MeanRev','VWAP','Composite','OptCall','OptPut','Gamma','Straddle','StopLoss','TakeProfit','TrailStop','OptExpiry'];
+const STRAT_KEYS=['RSI','MA','Momentum','MeanRev','VWAP','Composite','Stochastic','Bollinger','OptCall','OptPut','Gamma','Straddle','StopLoss','TakeProfit','TrailStop','OptExpiry'];
 let stats={}; STRAT_KEYS.forEach(s=>stats[s]={trades:0,wins:0,pnl:0});
+
+// =============================================================================
+// CIRCUIT BREAKER (Drawdown-based risk management)
+// =============================================================================
+let circuitBreakerState='normal'; // normal, warning, derisk, reduce, halt
+function updateCircuitBreaker(){
+  const tv=getPortValue();
+  const dd=(tv-peak)/peak;
+  // Thresholds scaled for small accounts ($1K) — normal variance can be 10%+
+  if(dd<=-0.25){circuitBreakerState='halt';}
+  else if(dd<=-0.20){circuitBreakerState='reduce';}
+  else if(dd<=-0.15){circuitBreakerState='derisk';}
+  else if(dd<=-0.10){circuitBreakerState='warning';}
+  else{circuitBreakerState='normal';}
+  const el=document.getElementById('circuitBreaker');
+  if(!el)return;
+  el.className='circuit-breaker';
+  if(circuitBreakerState==='warning'){el.className+=' cb-warning';el.textContent='CIRCUIT BREAKER: -10% Drawdown Warning — Tightening stops';}
+  else if(circuitBreakerState==='derisk'){el.className+=' cb-derisk';el.textContent='CIRCUIT BREAKER: -15% De-Risk — Reducing position sizes';}
+  else if(circuitBreakerState==='reduce'){el.className+=' cb-reduce';el.textContent='CIRCUIT BREAKER: -20% — Positions reduced 50%, tighter exits';}
+  else if(circuitBreakerState==='halt'){el.className+=' cb-halt';el.textContent='CIRCUIT BREAKER: -25% HALT — No new trades until recovery';}
+}
+
+// Circuit breaker multiplier for position sizing
+function cbSizeMult(){
+  if(circuitBreakerState==='reduce')return 0.5;
+  if(circuitBreakerState==='derisk')return 0.7;
+  if(circuitBreakerState==='warning')return 0.85;
+  return 1.0;
+}
+function cbSlMult(){
+  if(circuitBreakerState==='reduce')return 0.6;
+  if(circuitBreakerState==='derisk')return 0.75;
+  if(circuitBreakerState==='warning')return 0.85;
+  return 1.0;
+}
+
+// =============================================================================
+// GARCH(1,1) VOLATILITY MODEL
+// =============================================================================
+let garchState={}; // per-asset GARCH variance
+function garchVolatility(assetId){
+  const hist=priceHistory[assetId];
+  if(!hist||hist.length<5)return null;
+  // GARCH(1,1): h_t = omega + alpha * return^2 + beta * h_(t-1)
+  const omega=0.00001, alpha=0.1, beta=0.85;
+  if(!garchState[assetId])garchState[assetId]=0.0001; // initial variance
+  const ret=Math.log(hist[hist.length-1]/hist[hist.length-2]);
+  garchState[assetId]=omega+alpha*ret*ret+beta*garchState[assetId];
+  return Math.sqrt(garchState[assetId]); // return volatility (std dev)
+}
+
+// Average GARCH vol across portfolio
+function avgGarchVol(){
+  let sum=0,cnt=0;
+  for(const a of ALL_ASSETS){
+    const v=garchVolatility(a.id);
+    if(v!==null){sum+=v;cnt++;}
+  }
+  return cnt>0?sum/cnt:null;
+}
+
+// =============================================================================
+// KELLY CRITERION POSITION SIZING
+// =============================================================================
+function kellyFraction(stratName){
+  if(!brain.learningEnabled)return null;
+  const s=brain.strategies[stratName];
+  if(!s||s.trades<30)return null; // Need 30+ trades for reliable Kelly
+  const W=s.winRate;
+  const avgWin=s.recentResults.filter(r=>r.win).reduce((a,r)=>a+r.pnlPct,0);
+  const avgLoss=s.recentResults.filter(r=>!r.win).reduce((a,r)=>a+Math.abs(r.pnlPct),0);
+  const wins=s.recentResults.filter(r=>r.win).length;
+  const losses=s.recentResults.filter(r=>!r.win).length;
+  if(wins===0||losses===0)return null;
+  const R=(avgWin/wins)/(avgLoss/losses); // Win/loss ratio
+  if(R<=0)return null;
+  const kelly=W-(1-W)/R;
+  // Half-Kelly for safety, clamped to [0.05, 0.65]
+  return Math.max(0.05,Math.min(0.65,kelly*0.5));
+}
 
 // =============================================================================
 // ADAPTIVE LEARNING BRAIN
 // =============================================================================
-const ENTRY_STRATS=['RSI','MA','Momentum','MeanRev','VWAP','Composite'];
+const ENTRY_STRATS=['RSI','MA','Momentum','MeanRev','VWAP','Composite','Stochastic','Bollinger'];
 const BRAIN_STORAGE_KEY='czwm_brain_v1';
 
 function _defaultBrain(){
@@ -426,12 +516,15 @@ function recalcWeights(){
 
 function recalcThresholds(){
   const sk=brain.streak.current;
+  // Softened penalties — circuit breaker already handles drawdown risk
   if(sk<=-5){
-    brain.thresholds.slMult=0.5;brain.thresholds.tpMult=0.7;brain.thresholds.entryMult=1.6;
+    brain.thresholds.slMult=0.75;brain.thresholds.tpMult=0.85;brain.thresholds.entryMult=1.3;
   }else if(sk<=-3){
-    brain.thresholds.slMult=0.7;brain.thresholds.tpMult=0.85;brain.thresholds.entryMult=1.3;
+    brain.thresholds.slMult=0.85;brain.thresholds.tpMult=0.9;brain.thresholds.entryMult=1.15;
+  }else if(sk>=5){
+    brain.thresholds.slMult=1.2;brain.thresholds.tpMult=1.3;brain.thresholds.entryMult=0.75;
   }else if(sk>=3){
-    brain.thresholds.slMult=1.15;brain.thresholds.tpMult=1.2;brain.thresholds.entryMult=0.85;
+    brain.thresholds.slMult=1.1;brain.thresholds.tpMult=1.2;brain.thresholds.entryMult=0.85;
   }else{
     brain.thresholds.slMult+=(1.0-brain.thresholds.slMult)*0.3;
     brain.thresholds.tpMult+=(1.0-brain.thresholds.tpMult)*0.3;
@@ -454,7 +547,9 @@ function detectRegime(){
     const returns=[];
     for(let i=1;i<recent.length;i++)returns.push((recent[i]-recent[i-1])/recent[i-1]);
     const meanRet=returns.reduce((a,b)=>a+b,0)/returns.length;
-    const vol=Math.sqrt(returns.reduce((a,r)=>a+(r-meanRet)**2,0)/returns.length);
+    // Use GARCH vol if available, else rolling std dev
+    const gVol=garchVolatility(asset.id);
+    const vol=gVol||Math.sqrt(returns.reduce((a,r)=>a+(r-meanRet)**2,0)/returns.length);
     if(consistency>0.55)trendScore++;
     if(vol>0.003&&consistency<0.45)chopScore++;
     count++;
@@ -591,6 +686,14 @@ function renderBrainPanel(){
     h+=`<div class="brain-row"><span>TP Mult</span><span>${brain.thresholds.tpMult.toFixed(2)}x</span></div>`;
     h+=`<div class="brain-row"><span>Entry Bar</span><span>${brain.thresholds.entryMult.toFixed(2)}x</span></div>`;
     h+=`<div class="brain-row"><span>Total Learned</span><span style="color:var(--gold);font-weight:700">${brain.totalLearningTrades} trades</span></div>`;
+    // Kelly Criterion display
+    const kellyStrs=ENTRY_STRATS.filter(s=>kellyFraction(s)!==null);
+    if(kellyStrs.length>0){
+      h+=`<div class="brain-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span style="color:var(--gold)">Kelly Sizing</span><span>${kellyStrs.length}/${ENTRY_STRATS.length} active</span></div>`;
+    }
+    // Circuit breaker status
+    const cbCol=circuitBreakerState==='normal'?'var(--green)':circuitBreakerState==='warning'?'var(--yellow)':circuitBreakerState==='derisk'?'var(--orange)':'var(--red)';
+    h+=`<div class="brain-row"><span>Circuit Breaker</span><span style="color:${cbCol};font-weight:700">${circuitBreakerState.toUpperCase()}</span></div>`;
     rEl.innerHTML=h;
   }
 
@@ -793,6 +896,66 @@ function calcMom(pr,p=MOM_P){if(pr.length<p+1)return 0;return(pr[pr.length-1]-pr
 function calcZ(pr,p=8){if(pr.length<p)return 0;const s=pr.slice(-p);const m=s.reduce((a,b)=>a+b,0)/p;const std=Math.sqrt(s.reduce((a,v)=>a+(v-m)**2,0)/p);return std===0?0:(pr[pr.length-1]-m)/std}
 function calcVWAP(pr,p=VWAP_P){if(pr.length<p)return null;const s=pr.slice(-p);let pv=0,v=0;for(let i=1;i<s.length;i++){const vol=Math.abs(s[i]-s[i-1])+.001;pv+=s[i]*vol;v+=vol}return v>0?pv/v:s[s.length-1]}
 
+// ── ATR (Average True Range) ──────────────────────────────────────
+function calcATR(pr,p=8){
+  if(pr.length<p+1)return null;
+  const s=pr.slice(-(p+1));
+  let sum=0;
+  for(let i=1;i<s.length;i++){
+    // For tick data without explicit high/low, true range ≈ |close - prev close|
+    sum+=Math.abs(s[i]-s[i-1]);
+  }
+  return sum/p;
+}
+
+// ── ADX (Average Directional Index) ──────────────────────────────
+function calcADX(pr,p=10){
+  if(pr.length<p*2)return null;
+  const recent=pr.slice(-(p*2));
+  let plusDM=0,minusDM=0,tr=0;
+  for(let i=1;i<recent.length;i++){
+    const diff=recent[i]-recent[i-1];
+    const range=Math.abs(diff);
+    tr+=range;
+    if(diff>0)plusDM+=diff;
+    else minusDM+=Math.abs(diff);
+  }
+  if(tr===0)return 0;
+  const plusDI=(plusDM/tr)*100;
+  const minusDI=(minusDM/tr)*100;
+  const diSum=plusDI+minusDI;
+  if(diSum===0)return 0;
+  return Math.abs(plusDI-minusDI)/diSum*100;
+}
+
+// ── Stochastic Oscillator (%K, %D) ──────────────────────────────
+function calcStochastic(pr,p=8,smooth=3){
+  if(pr.length<p)return null;
+  const s=pr.slice(-p);
+  const high=Math.max(...s),low=Math.min(...s),close=s[s.length-1];
+  if(high===low)return{k:50,d:50};
+  const k=((close-low)/(high-low))*100;
+  // %D is SMA of %K — approximate with shorter window
+  if(pr.length<p+smooth)return{k,d:k};
+  let dSum=0;
+  for(let i=0;i<smooth;i++){
+    const window=pr.slice(-(p+i),pr.length-i);
+    const h2=Math.max(...window),l2=Math.min(...window);
+    dSum+=h2===l2?50:((window[window.length-1]-l2)/(h2-l2))*100;
+  }
+  return{k,d:dSum/smooth};
+}
+
+// ── Bollinger Bands ─────────────────────────────────────────────
+function calcBollinger(pr,p=10,mult=2){
+  if(pr.length<p)return null;
+  const s=pr.slice(-p);
+  const mean=s.reduce((a,b)=>a+b,0)/p;
+  const std=Math.sqrt(s.reduce((a,v)=>a+(v-mean)**2,0)/p);
+  const price=pr[pr.length-1];
+  return{upper:mean+mult*std,lower:mean-mult*std,mid:mean,bandwidth:std===0?0:(mult*std*2)/mean,pctB:std===0?0.5:(price-mean+mult*std)/(mult*std*2)};
+}
+
 function composite(pr,risk){
   if(pr.length<MIN_HIST)return{score:0,sigs:[]};
   const rsi=calcRSI(pr),maS=calcMA(pr,MA_S),maL=calcMA(pr,MA_L),mom=calcMom(pr),z=calcZ(pr),vwap=calcVWAP(pr),price=pr[pr.length-1];
@@ -898,6 +1061,32 @@ function evaluate(){
     if(comp.score>0.06&&!hasStockPos)
       buys.push({asset:asset.id,sym:asset.sym,strat:'Composite',str:comp.score*sigBoost,reason:`Score ${comp.score.toFixed(2)} [${comp.sigs.join(',')}]${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
 
+    // ===== STOCHASTIC OSCILLATOR =====
+    const stoch=calcStochastic(hist);
+    if(stoch){
+      if(stoch.k<25&&stoch.d<30&&!hasStockPos)
+        buys.push({asset:asset.id,sym:asset.sym,strat:'Stochastic',str:((30-stoch.k)/30)*sigBoost,reason:`Stoch %K=${stoch.k.toFixed(0)} %D=${stoch.d.toFixed(0)} oversold${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
+      else if(stoch.k>75&&stoch.d>70&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Stochastic',`Stoch %K=${stoch.k.toFixed(0)} overbought`);}
+    }
+
+    // ===== BOLLINGER BANDS =====
+    const bb=calcBollinger(hist);
+    if(bb){
+      if(price<bb.lower&&!hasStockPos)
+        buys.push({asset:asset.id,sym:asset.sym,strat:'Bollinger',str:Math.min((bb.lower-price)/price*100,1)*sigBoost,reason:`Below lower BB ($${bb.lower.toFixed(2)})${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
+      else if(price>bb.upper&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Bollinger',`Above upper BB ($${bb.upper.toFixed(2)})`);}
+    }
+
+    // ===== ADX SOFT FILTER — reduce (don't kill) trend signals when ADX is weak =====
+    const adx=calcADX(hist);
+    if(adx!==null&&adx<15){
+      // Scale down trend-following signals proportionally (floor at 40% strength)
+      const adxScale=Math.max(0.4, adx/15);
+      for(const sig of buys){
+        if(sig.asset===asset.id&&(sig.strat==='MA'||sig.strat==='Momentum'))sig.str*=adxScale;
+      }
+    }
+
     // ===== MICRO-TREND (tick-level signal) =====
     // Detects 3+ consecutive moves in same direction — works great with live tick data
     if(hist.length>=4&&!hasStockPos){
@@ -972,8 +1161,8 @@ function evaluate(){
     for(const op of optPositions){
       const curOptVal=op.optionPrice*op.contracts*100;
       const optPnlPct=(curOptVal-op.costBasis)/op.costBasis;
-      // Take profit on options at 15%+ gain
-      if(optPnlPct>0.15){
+      // Take profit on options at 30%+ gain (let winners run)
+      if(optPnlPct>0.30){
         const pnl=curOptVal-op.costBasis;
         cash+=curOptVal;
         positions=positions.filter(p=>p.id!==op.id);
@@ -990,9 +1179,10 @@ function evaluate(){
   }
 
   // ===== STOCK/CRYPTO STOP-LOSS, TAKE-PROFIT, TRAILING STOP =====
-  const adjSl=risk.sl*(brain.learningEnabled?brain.thresholds.slMult:1);
-  const adjTp=risk.tp*(brain.learningEnabled?brain.thresholds.tpMult:1);
-  const adjTrail=risk.trail*(brain.learningEnabled?brain.thresholds.slMult:1);
+  // ATR-based dynamic stops + brain multipliers + circuit breaker
+  const brainSl=brain.learningEnabled?brain.thresholds.slMult:1;
+  const brainTp=brain.learningEnabled?brain.thresholds.tpMult:1;
+  const cbSl=cbSlMult();
   for(const pos of [...positions]){
     if(pos.isOption)continue;
     const price=curPrices[pos.asset];if(!price)continue;
@@ -1000,10 +1190,31 @@ function evaluate(){
     if(price>(pos.highPrice||pos.entryPrice))pos.highPrice=price;
     const drop=(price-(pos.highPrice||pos.entryPrice))/(pos.highPrice||pos.entryPrice);
     const held=tickCount-(pos.entryTick||0);
+    // ATR-based stops with 3:1 R:R target
+    const atr=calcATR(priceHistory[pos.asset]);
+    let dynSl=risk.sl, dynTp=risk.tp, dynTrail=risk.trail;
+    if(atr&&pos.entryPrice>0){
+      const atrPct=atr/pos.entryPrice;
+      dynSl=-Math.max(atrPct*2.5, Math.abs(risk.sl)*0.7); // Floor at 70% of base SL
+      dynTp=Math.max(atrPct*7.5, risk.tp*0.8); // 3:1 R:R vs SL, floor at 80% of base TP
+      dynTrail=Math.max(atrPct*2, risk.trail*0.7);
+    }
+    const adjSl=dynSl*brainSl*cbSl;
+    const adjTp=dynTp*brainTp;
+    const adjTrail=dynTrail*brainSl*cbSl;
     // Stop-loss always fires (safety). TP and trail require minimum hold time.
-    if(pnl<=adjSl)sell(pos,price,'StopLoss',`SL ${(pnl*100).toFixed(2)}%`);
+    if(pnl<=adjSl)sell(pos,price,'StopLoss',`SL ${(pnl*100).toFixed(2)}% (ATR-adj)`);
     else if(held>=risk.minHold&&pnl>=adjTp)sell(pos,price,'TakeProfit',`TP +${(pnl*100).toFixed(2)}%`);
     else if(held>=risk.minHold&&pnl>0.001&&drop<-adjTrail)sell(pos,price,'TrailStop',`Trail ${(drop*100).toFixed(2)}% from high`);
+  }
+
+  // Update circuit breaker
+  updateCircuitBreaker();
+
+  // CIRCUIT BREAKER HALT — no new trades
+  if(circuitBreakerState==='halt'){
+    setDot('dotOptions',true);
+    return;
   }
 
   // Apply adaptive brain weights to signal strengths
@@ -1078,7 +1289,18 @@ function evaluate(){
       if(positions.some(p=>p.asset===sig.asset&&!p.isOption))continue;
       // In crypto-only mode, allow larger position sizes since it's the only game in town
       const posBoost=cryptoMode&&CRYPTO.some(c=>c.id===sig.asset)?1.3:1.0;
-      const maxInv=tv*getRisk().maxPosPct*posBoost;
+      // Kelly Criterion position sizing (when enough data)
+      const kelly=kellyFraction(sig.strat);
+      const kellyPct=kelly!==null?kelly:getRisk().maxPosPct;
+      // ATR-based sizing: position = (account × risk%) / (ATR × price)
+      const atr=calcATR(priceHistory[sig.asset]);
+      let atrSizeMult=1.0;
+      if(atr&&curPrices[sig.asset]){
+        const atrPct=atr/curPrices[sig.asset];
+        // Inverse volatility: smaller positions when vol is high
+        atrSizeMult=Math.max(0.3,Math.min(1.5,0.005/Math.max(atrPct,0.0001)));
+      }
+      const maxInv=tv*kellyPct*posBoost*cbSizeMult()*atrSizeMult;
       const amount=Math.min(maxInv,cash*0.98);
       if(amount<3)continue;
       buy(sig.asset,sig.sym,amount,sig.strat,sig.reason);
@@ -1218,6 +1440,15 @@ function renderPortfolio(){
   document.getElementById('leverage').textContent=lev.toFixed(1)+'x';
   document.getElementById('leverage').style.color=lev>3?'var(--red)':lev>1.5?'var(--orange)':'var(--text)';
 
+  // GARCH volatility display
+  const gv=avgGarchVol();
+  const gvEl=document.getElementById('garchVol');
+  if(gvEl){
+    if(gv!==null){gvEl.textContent=(gv*100).toFixed(3)+'%';gvEl.style.color=gv>0.01?'var(--red)':gv>0.005?'var(--orange)':'var(--green)';}
+    else{gvEl.textContent='\u2014';}
+  }
+  updateCircuitBreaker();
+
   const sells=tradeLog.filter(t=>t.type==='SELL'&&t.pnl!==null);
   if(sells.length){const wr=sells.filter(t=>t.pnl>0).length/sells.length;
     document.getElementById('winRate').textContent=(wr*100).toFixed(0)+'%';
@@ -1267,12 +1498,18 @@ function renderPositions(){
     } else {
       const price=curPrices[p.asset]||p.entryPrice;
       const val=p.qty*price;const pnl=val-p.qty*p.entryPrice;const pct=((price-p.entryPrice)/p.entryPrice)*100;const up=pnl>=0;
-      const risk=getRisk();
+      const riskR=getRisk();
+      const atrPos=calcATR(priceHistory[p.asset]);
+      let slPrice=p.entryPrice*(1+riskR.sl),tpPrice=p.entryPrice*(1+riskR.tp);
+      if(atrPos&&p.entryPrice>0){
+        slPrice=p.entryPrice-Math.max(atrPos*2.5, p.entryPrice*Math.abs(riskR.sl)*0.7);
+        tpPrice=p.entryPrice+Math.max(atrPos*7.5, p.entryPrice*riskR.tp*0.8);
+      }
       h+=`<div class="pos">
         <div class="pos-top"><span class="pos-sym">${p.sym} <span class="opt-badge opt-stock">STOCK</span></span><span class="pos-pnl" style="color:${up?'var(--green)':'var(--red)'}">${up?'+':''}$${pnl.toFixed(2)} (${up?'+':''}${pct.toFixed(1)}%)</span></div>
         <div class="pos-det"><span>${p.qty.toFixed(6)}</span><span>Entry $${fmtP(p.entryPrice)}</span><span>Now $${fmtP(price)}</span></div>
-        <div class="pos-det"><span>Val $${val.toFixed(2)}</span><span>SL $${fmtP(p.entryPrice*(1+risk.sl))}</span><span>TP $${fmtP(p.entryPrice*(1+risk.tp))}</span></div>
-        <div class="pos-strat"><span class="stag stag-${p.strategy.toLowerCase()}">${p.strategy}</span> ${fmtT(p.time)}</div>
+        <div class="pos-det"><span>Val $${val.toFixed(2)}</span><span>SL $${fmtP(slPrice)}</span><span>TP $${fmtP(tpPrice)}</span></div>
+        <div class="pos-strat"><span class="stag stag-${p.strategy.toLowerCase()}">${p.strategy}</span> ${fmtT(p.time)}${atrPos?' | ATR: $'+fmtP(atrPos):''}</div>
       </div>`;
     }
   }
@@ -1298,18 +1535,20 @@ function renderStrats(){
   const c=document.getElementById('stratBody');
   const defs=[
     {k:'RSI',n:'RSI',col:'var(--purple)',d:'Oversold/Overbought'},
-    {k:'MA',n:'MA Crossover',col:'var(--cyan)',d:'Golden/Death cross'},
-    {k:'Momentum',n:'Momentum',col:'var(--orange)',d:'Breakout'},
+    {k:'MA',n:'MA Crossover',col:'var(--cyan)',d:'Golden/Death cross (ADX filtered)'},
+    {k:'Momentum',n:'Momentum',col:'var(--orange)',d:'Breakout (ADX filtered)'},
     {k:'MeanRev',n:'Mean Reversion',col:'var(--yellow)',d:'Z-score revert'},
     {k:'VWAP',n:'VWAP',col:'var(--blue)',d:'Vol-weighted'},
-    {k:'Composite',n:'Composite',col:'var(--gold)',d:'Multi-signal'},
+    {k:'Composite',n:'Composite',col:'var(--gold)',d:'Multi-signal ensemble'},
+    {k:'Stochastic',n:'Stochastic',col:'var(--pink)',d:'%K/%D oscillator'},
+    {k:'Bollinger',n:'Bollinger Bands',col:'var(--orange)',d:'Band breakout/revert'},
     {k:'OptCall',n:'Calls',col:'var(--green)',d:'Bullish options'},
     {k:'OptPut',n:'Puts',col:'var(--red)',d:'Bearish options'},
     {k:'Gamma',n:'Gamma Scalp',col:'var(--purple)',d:'High-gamma ATM'},
     {k:'Straddle',n:'Straddle',col:'var(--cyan)',d:'Vol play'},
-    {k:'StopLoss',n:'Stop-Loss',col:'var(--red)',d:'Risk exit'},
-    {k:'TakeProfit',n:'Take-Profit',col:'var(--green)',d:'Profit exit'},
-    {k:'TrailStop',n:'Trail Stop',col:'var(--orange)',d:'Dynamic exit'},
+    {k:'StopLoss',n:'Stop-Loss',col:'var(--red)',d:'ATR-dynamic exit'},
+    {k:'TakeProfit',n:'Take-Profit',col:'var(--green)',d:'ATR-dynamic exit'},
+    {k:'TrailStop',n:'Trail Stop',col:'var(--orange)',d:'ATR-dynamic exit'},
     {k:'OptExpiry',n:'Expiry',col:'var(--pink)',d:'Option expired'},
   ];
   let h='';
@@ -1349,7 +1588,7 @@ function resetBot(){
   running=false;stopLoop();
   cash=STARTING;positions=[];tradeLog=[];priceHistory={};curPrices={};lastPrices={};priceChg={};
   portHistory=[{time:new Date(),value:STARTING}];
-  tidCtr=0;apiErr=0;peak=STARTING;maxDD=0;bestTr=0;tickCount=0;cryptoStartPrices={};
+  tidCtr=0;apiErr=0;peak=STARTING;maxDD=0;bestTr=0;tickCount=0;cryptoStartPrices={};garchState={};circuitBreakerState='normal';
   lastStockFetch=0;stockApiOk=false;
   STRAT_KEYS.forEach(s=>stats[s]={trades:0,wins:0,pnl:0});
   chart.data.labels=[fmtT(new Date())];chart.data.datasets[0].data=[STARTING];chart.update();

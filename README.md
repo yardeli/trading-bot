@@ -4,7 +4,7 @@
 
 This repository contains two interconnected trading systems:
 
-1. **Paper Trading Terminal (v4)** — A real-time paper trading simulator (`paper-trader-v4.html`)
+1. **Paper Trading Terminal (v6)** — A real-time paper trading simulator with adaptive ML brain, GARCH volatility, Kelly sizing, and circuit breakers (`paper-trader-v4.html`)
 2. **Quantitative Engine** — An institutional-grade backtesting engine with a web dashboard (`quant-engine/`)
 
 The quant engine powers the analytical backend. It downloads real market data, runs six alpha models simultaneously, constructs optimized portfolios, enforces risk limits, and simulates execution with realistic transaction costs. Results are displayed in a live web dashboard styled to match the paper trading terminal.
@@ -243,6 +243,142 @@ These can all be adjusted from the web dashboard's Configure panel before runnin
 ---
 
 ## Change Log
+
+### v6.1 — Profit Optimization: Remove Over-Conservatism, 3:1 R:R, Widened Thresholds (2026-03-10)
+
+**Problem:** v6.0 stacked 5 independent safety layers (brain thresholds × circuit breaker × ATR sizing × Kelly × ensemble filter) that compounded into extreme conservatism. A 3-loss streak on a $1K account could trigger brain SL tightening (0.7x) AND circuit breaker (0.85x) simultaneously, creating a death spiral of tighter stops → more stop-outs → more tightening. The risk/reward ratio was only 1.67:1, not enough for ~50% win rate profitability.
+
+**Changes:**
+
+**1. Risk/Reward Ratio → 3:1 Target**
+- ATR-based TP raised from `3×ATR` to `7.5×ATR` (3:1 ratio vs `2.5×ATR` SL)
+- ATR SL floor raised from 50% to 70% of base (prevents too-tight stops on noisy tick data)
+- ATR TP floor raised from 50% to 80% of base
+- YOLO base params: SL -2% → TP 6% (3:1), was SL -3% → TP 5% (1.67:1)
+- Options TP widened from 15% to 30% (let winners run)
+
+**2. Circuit Breaker Thresholds Doubled**
+- Warning: -5% → -10% ($50 → $100 on $1K)
+- De-Risk: -7.5% → -15%
+- Reduce 50%: -10% → -20%
+- Halt: -15% → -25%
+- Rationale: $50 drawdown is normal variance on a $1K account, not an emergency
+
+**3. Brain Streak Penalties Softened**
+- 3-loss streak: SL was 0.7x → now 0.85x, entry bar was 1.3x → now 1.15x
+- 5-loss streak: SL was 0.5x → now 0.75x, entry bar was 1.6x → now 1.3x
+- Added 5-win streak bonus: TP boosted to 1.3x, entry bar lowered to 0.75x
+- Rationale: circuit breaker already handles drawdown risk, brain shouldn't double-punish
+
+**4. Ensemble Disagreement Filter Removed**
+- Was: single signals with strength < 0.3 and no confirming signal were killed
+- Now: all signals trade regardless of consensus
+- Rationale: RSI oversold or Bollinger lower band alone are valid setups — requiring multiple confirmations killed too many good entries
+
+**5. ADX Filter Softened (Hard Block → Soft Scale)**
+- Was: ADX < 20 completely removed MA and Momentum signals
+- Now: ADX < 15 scales down MA/Momentum strength proportionally (floor at 40%)
+- Threshold lowered from 20 to 15 (ADX is noisy on tick data)
+- Rationale: tick-level ADX oscillates wildly; hard cutoff removed valid signals randomly
+
+**6. YOLO Risk Profile Retuned**
+- maxPos: 8 → 10 (more concurrent positions for diversification)
+- maxPosPct: 65% → 70%
+- minHold: 5 → 3 ticks (~18s, captures fast spikes before reversal)
+- RSI bands widened: 46/54 → 44/56 (more entries)
+- Options allocation: 50% → 55%
+
+**7. All Risk Profiles Rebalanced**
+- Moderate: maxPos 4→5, TP 2%→4.5%, minHold 10→6
+- Aggressive: maxPos 6→7, TP 3.5%→6%, minHold 8→4
+- Wider RSI bands across all tiers for more entry opportunities
+
+**Net effect:** Fewer layers blocking trades, wider TP targets to let winners run, faster entries/exits, and safety systems that only kick in during real emergencies (not normal variance).
+
+---
+
+### v6.0 — Wiki Research Integration: GARCH, Kelly, ATR, ADX, Circuit Breaker, Stochastic, Bollinger (2026-03-10)
+
+**Source:** Implemented actionable improvements from `Documentation and Trading Models/CZWM-Trading-Platform-Wiki.md` (684-line research document covering Phase 2-4 platform enhancements).
+
+**1. GARCH(1,1) Volatility Model**
+- Replaced rolling standard deviation with GARCH(1,1) for regime detection: `h_t = 0.00001 + 0.1 × return² + 0.85 × h_(t-1)`
+- Per-asset persistent variance tracking in `garchState{}`
+- Average GARCH volatility displayed in hero section (color-coded: green < 0.5%, orange < 1%, red > 1%)
+- Feeds into regime detection for more accurate trending/choppy classification
+
+**2. Kelly Criterion Position Sizing**
+- Half-Kelly formula: `Kelly% = W - (1-W)/R`, applied at 50% for safety
+- Per-strategy calculation based on brain's learned win rate and avg win/loss ratio
+- Requires 30+ trades per strategy before activating (prevents small-sample overfit)
+- Replaces fixed `maxPosPct` when enough data is available
+- Clamped to [5%, 65%] range for safety
+
+**3. ATR-Based Dynamic Stop-Losses**
+- Replaced fixed-percentage SL/TP/Trail with ATR-scaled exits: `stop = entry - 2×ATR`, `TP = entry + 3×ATR`, `trail = 1.5×ATR`
+- ATR calculated from tick-level data (8-period average true range)
+- Falls back to fixed percentage when ATR is unavailable (< 9 data points)
+- Position display now shows actual ATR value per position
+
+**4. ATR-Based Position Sizing (Inverse Volatility)**
+- Position size inversely proportional to asset ATR: `sizeMult = 0.005 / atrPct`
+- High-volatility assets get smaller positions, low-volatility get larger
+- Clamped to [0.3x, 1.5x] multiplier range
+- Stacks with Kelly Criterion and circuit breaker sizing
+
+**5. ADX Trend Strength Filter**
+- ADX (Average Directional Index) calculated per asset, 10-period
+- When ADX < 20 (no clear trend), MA Crossover and Momentum signals are filtered out
+- Prevents trend-following strategies from trading in ranging/choppy markets
+- Mean Reversion and RSI signals unaffected (they work in non-trending conditions)
+
+**6. Drawdown Circuit Breaker (4-Tier)**
+- Automatically reduces risk based on portfolio drawdown from peak:
+  - **-10% Warning**: Tightens stops to 85%, reduces positions to 85%
+  - **-15% De-Risk**: Tightens stops to 75%, reduces positions to 70%
+  - **-20% Reduce**: Tightens stops to 60%, reduces positions to 50%
+  - **-25% Halt**: No new trades until recovery
+- *(Thresholds scaled for $1K accounts in v6.1)*
+- Visual banner in hero section (yellow → orange → red → flashing red)
+- Status shown in Adaptive Brain panel
+- Multipliers stack with brain thresholds
+
+**7. Stochastic Oscillator (%K/%D)**
+- New entry strategy: buys when %K < 25 and %D < 30 (oversold), sells when %K > 75 (overbought)
+- 8-period lookback with 3-period %D smoothing
+- Signal strength proportional to oversold depth
+- Tracked by adaptive brain (weight, win rate, regime adjustments)
+
+**8. Bollinger Bands**
+- New entry strategy: buys when price drops below lower band, sells when price exceeds upper band
+- 10-period SMA with 2σ bands
+- Signal strength proportional to distance below lower band
+- Tracked by adaptive brain
+
+**9. Ensemble Disagreement Filter**
+- Single weak signals (strength < 0.3) with no confirming signals from other strategies are filtered out
+- Prevents low-conviction trades when only one indicator fires weakly
+- Multiple signals on same asset reinforce each other (ensemble agreement)
+
+**UI Changes:**
+- Version bumped to v6 throughout
+- GARCH Vol metric in hero section
+- Circuit Breaker banner (color-coded by severity)
+- Strategy Performance updated: 8 entry strategies (was 6), descriptions note ADX/ATR features
+- Brain panel shows Kelly sizing status and circuit breaker state
+- Position cards show ATR value and ATR-based SL/TP levels
+
+---
+
+### v5.1 — Fix Flat PnL: Concentrated Positions and Minimum Hold Time (2026-03-10)
+
+**Problem:** Trades executing but PnL near-zero. Signal whipsaw (bought on RSI oversold, sold 2 ticks later on RSI overbought) and tiny positions ($1,000 across 20 slots = $50 each).
+
+**Changes:** Added `minHold` to prevent premature sells (YOLO: 5 ticks / ~30s). Concentrated positions: max 8 instead of 20, up to 65% per position. Wider thresholds: YOLO TP 5%, SL -3%, Trail 1.8%. Stop-loss still fires immediately for safety.
+
+**Verified:** BTC $650 position sold at TP +5% for +$32.50. Whipsaw prevented during hold period.
+
+---
 
 ### v5.0 — Adaptive Learning Brain (2026-03-10)
 

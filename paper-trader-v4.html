@@ -620,14 +620,69 @@ function importBrain(){
       try{
         const imported=JSON.parse(ev.target.result);
         if(imported.version!==1){alert('Incompatible brain version');return;}
-        Object.assign(brain,imported);
-        saveBrain();renderBrainPanel();
-        alert('Brain imported — '+brain.totalLearningTrades+' trades of learning restored');
-      }catch(e){alert('Invalid brain file');}
+        // Detect quant-engine brain export vs native brain
+        if(imported.source==='quant-engine-backtest'){
+          _importFromQE(imported);
+        }else{
+          Object.assign(brain,imported);
+          saveBrain();renderBrainPanel();
+          alert('Brain imported — '+brain.totalLearningTrades+' trades of learning restored');
+        }
+      }catch(e){alert('Invalid brain file: '+e.message);}
     };
     reader.readAsText(file);
   };
   input.click();
+}
+
+function _importFromQE(qe){
+  // Merge quant-engine backtest knowledge into the live brain
+  // QE strategies map to paper-trader strategies with pre-computed weights
+  const bt=qe.backtest_summary||{};
+  let merged=0;
+  for(const key of ENTRY_STRATS){
+    if(qe.strategies&&qe.strategies[key]){
+      const src=qe.strategies[key];
+      const dst=brain.strategies[key];
+      // If live brain has real trades, blend QE weights with live data
+      if(dst.trades>=5){
+        dst.weight=dst.weight*0.6+src.weight*0.4; // 60% live, 40% QE
+      }else{
+        // No live data yet — trust QE fully
+        dst.weight=src.weight;
+        dst.winRate=src.winRate;
+        dst.avgPnlPct=src.avgPnlPct;
+      }
+      dst.weight=Math.max(0.2,Math.min(3.0,dst.weight));
+      merged++;
+    }
+  }
+  // Import thresholds (blend with existing)
+  if(qe.thresholds){
+    const live=brain.thresholds;
+    brain.thresholds={
+      slMult: live.slMult*0.5+qe.thresholds.slMult*0.5,
+      tpMult: live.tpMult*0.5+qe.thresholds.tpMult*0.5,
+      entryMult: live.entryMult*0.5+qe.thresholds.entryMult*0.5,
+    };
+  }
+  // Import regime
+  if(qe.regime){
+    brain.regime.type=qe.regime.type;
+    brain.regime.confidence=qe.regime.confidence;
+  }
+  // Mark as QE-enhanced
+  brain._qeSource={
+    importedAt:new Date().toISOString(),
+    sharpe:bt.sharpe_ratio||0,
+    totalReturn:bt.total_return||0,
+    winRate:bt.win_rate||0,
+    modelWeights:qe.model_weights_raw||{},
+  };
+  saveBrain();renderBrainPanel();
+  const sr=(bt.sharpe_ratio||0).toFixed(2);
+  const tr=((bt.total_return||0)*100).toFixed(1);
+  alert(`Quant Engine brain imported!\n\nBacktest: ${tr}% return, ${sr} Sharpe\nRegime: ${qe.regime?.type||'unknown'}\n${merged} strategy weights updated\n\nThe brain now starts pre-trained.`);
 }
 
 function resetLearning(){
@@ -701,7 +756,12 @@ function renderBrainPanel(){
   const mEl=document.getElementById('brainMeta');
   if(mEl){
     const saved=brain.lastSaved?new Date(brain.lastSaved).toLocaleTimeString():'never';
-    mEl.textContent='Last saved: '+saved+' | Brain v'+brain.version+' | localStorage: '+BRAIN_STORAGE_KEY;
+    let meta='Last saved: '+saved+' | Brain v'+brain.version+' | localStorage: '+BRAIN_STORAGE_KEY;
+    if(brain._qeSource){
+      const qe=brain._qeSource;
+      meta+=` | QE: ${(qe.totalReturn*100).toFixed(1)}% ret, ${qe.sharpe.toFixed(2)} Sharpe (imported ${qe.importedAt?.slice(0,10)||'?'})`;
+    }
+    mEl.textContent=meta;
   }
 }
 

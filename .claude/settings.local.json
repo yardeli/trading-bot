@@ -31,7 +31,8 @@
       "Bash(taskkill //F //IM python.exe 2>/dev/null; echo \"done\")",
       "Bash(find C:/Users/yarden -maxdepth 4 -name \"quant*\" -type d 2>/dev/null; find C:/Users/yarden -maxdepth 4 -name \"quant*\" -type f 2>/dev/null | head -20)",
       "Bash(cd /c/Users/yarden/quant-engine-local && python main.py --no-ui --tickers SPY QQQ AAPL MSFT NVDA --years 3 2>&1)",
-      "Bash(cd /c/Users/yarden/quant-engine-local && python main.py --no-ui 2>&1)"
+      "Bash(cd /c/Users/yarden/quant-engine-local && python main.py --no-ui 2>&1)",
+      "Bash(python main.py --no-ui 2>&1 | tail -30)"
     ]
   }
 }

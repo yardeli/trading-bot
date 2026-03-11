@@ -588,3 +588,44 @@ These can all be adjusted from the web dashboard's Configure panel before runnin
 - **Min trade size** — $3→$1
 
 **Result:** More frequent trades, bigger positions, wider stops allowing trades to actually move, crypto especially active. The brain still learns and adapts, just without choking out new trades.
+
+---
+
+### v6.3 — Quant Engine → Paper Trader Brain Pipeline (2026-03-11)
+
+**Problem:** The quant-engine backtests 5 years of history and learns which models work best, but that knowledge died when the process ended. The paper-trader's brain started from scratch every time. Two systems, zero knowledge transfer.
+
+**Solution:** Built a brain export/import pipeline so the quant-engine's backtest findings pre-train the paper-trader's brain.
+
+**Changes to `quant-engine/backtest/engine.py`:**
+- New `export_brain()` method that maps QE model weights → paper-trader strategy weights
+- Maps: ts_momentum→Momentum, momentum_vol_break→MA, xs_momentum+ml_alpha→Composite, ou_mean_reversion→MeanRev/RSI/Bollinger, pairs_trading→Stochastic, ml_alpha→VWAP
+- Derives regime (trending/choppy/mixed) from momentum vs mean-reversion weight ratios
+- Derives risk thresholds (SL/TP/entry multipliers) from backtest Sharpe ratio
+- Exports `brain_export.json` with strategy weights, regime, thresholds, backtest summary
+- Minimum weight floor (0.3x) so no strategy is completely zeroed out
+
+**Changes to `quant-engine/main.py`:**
+- Auto-exports brain after every backtest run
+
+**Changes to `quant-engine/server.py`:**
+- Auto-exports brain after web dashboard backtests
+- New `/api/brain` endpoint serves the brain export as JSON
+
+**Changes to `paper-trader-v4.html`:**
+- `importBrain()` now auto-detects QE brain exports vs native brain files
+- New `_importFromQE()` function merges QE knowledge into live brain:
+  - If brain has 5+ live trades per strategy: 60% live / 40% QE blend
+  - If brain is fresh: trust QE weights fully
+  - Blends thresholds 50/50 with existing brain
+  - Imports regime detection
+  - Stores QE metadata (`_qeSource`) for display
+- Brain panel shows QE import status (return, Sharpe, import date)
+
+**Usage:**
+1. Run quant-engine backtest: `cd quant-engine-local && python main.py --no-ui`
+2. This creates `brain_export.json`
+3. In paper-trader-v4.html, click "Import Brain" → select `brain_export.json`
+4. Brain starts pre-trained with backtest knowledge, continues learning live
+
+**New file:** `brain_export.json` — auto-generated after each backtest

@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "exported_at": "2026-03-11T03:11:07.632140",
+  "source": "quant-engine-backtest",
+  "backtest_summary": {
+    "total_return": 0.085282,
+    "annualized_return": 0.015079,
+    "sharpe_ratio": 0.1758,
+    "sortino_ratio": 0.214,
+    "max_drawdown": -0.127659,
+    "win_rate": 0.4194,
+    "profit_factor": 1.0425,
+    "trading_days": 1378
+  },
+  "model_weights_raw": {
+    "ts_momentum": 0.063691,
+    "xs_momentum": 0.139387,
+    "momentum_vol_break": 0.068788,
+    "ou_mean_reversion": 0.121993,
+    "pairs_trading": 0.562975,
+    "ml_alpha": 0.043167
+  },
+  "strategies": {
+    "Momentum": {
+      "weight": 0.744,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    },
+    "MA": {
+      "weight": 0.744,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    },
+    "Composite": {
+      "weight": 0.744,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    },
+    "MeanRev": {
+      "weight": 0.744,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    },
+    "RSI": {
+      "weight": 0.744,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    },
+    "Bollinger": {
+      "weight": 0.744,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    },
+    "Stochastic": {
+      "weight": 2.7922,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    },
+    "VWAP": {
+      "weight": 0.744,
+      "winRate": 0.4194,
+      "avgPnl": 0,
+      "avgPnlPct": 6e-05,
+      "trades": 0,
+      "recentResults": []
+    }
+  },
+  "thresholds": {
+    "slMult": 1.0,
+    "tpMult": 1.0,
+    "entryMult": 1.0
+  },
+  "regime": {
+    "type": "trending",
+    "confidence": 0.3805,
+    "history": []
+  },
+  "feature_importance": {},
+  "streak": {
+    "current": 0,
+    "type": null
+  },
+  "learningEnabled": true,
+  "totalLearningTrades": 0,
+  "lastSaved": null
+}

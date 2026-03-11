@@ -353,7 +353,7 @@ const MIN_HIST = 3; // Ultra-fast start for tick data
 const RISK = {
   moderate:   {maxPosPct:.45,maxPos:5,sl:-.015,tp:.045,trail:.010,rsiLo:40,rsiHi:60,momTh:.003,optPct:.30,optMaxPos:4,minHold:6},
   aggressive: {maxPosPct:.55,maxPos:7,sl:-.020,tp:.060,trail:.015,rsiLo:42,rsiHi:58,momTh:.002,optPct:.40,optMaxPos:6,minHold:4},
-  yolo:       {maxPosPct:.70,maxPos:10,sl:-.020,tp:.060,trail:.015,rsiLo:44,rsiHi:56,momTh:.001,optPct:.55,optMaxPos:8,minHold:3},
+  yolo:       {maxPosPct:.85,maxPos:15,sl:-.035,tp:.10,trail:.025,rsiLo:46,rsiHi:54,momTh:.0005,optPct:.65,optMaxPos:10,minHold:1},
 };
 
 const MA_S=3, MA_L=8, MOM_P=5, MR_TH=0.5, VWAP_P=6;
@@ -376,32 +376,32 @@ let circuitBreakerState='normal'; // normal, warning, derisk, reduce, halt
 function updateCircuitBreaker(){
   const tv=getPortValue();
   const dd=(tv-peak)/peak;
-  // Thresholds scaled for small accounts ($1K) — normal variance can be 10%+
-  if(dd<=-0.25){circuitBreakerState='halt';}
-  else if(dd<=-0.20){circuitBreakerState='reduce';}
-  else if(dd<=-0.15){circuitBreakerState='derisk';}
-  else if(dd<=-0.10){circuitBreakerState='warning';}
+  // Wide thresholds — paper trading, let it trade aggressively
+  if(dd<=-0.50){circuitBreakerState='halt';}
+  else if(dd<=-0.40){circuitBreakerState='reduce';}
+  else if(dd<=-0.30){circuitBreakerState='derisk';}
+  else if(dd<=-0.20){circuitBreakerState='warning';}
   else{circuitBreakerState='normal';}
   const el=document.getElementById('circuitBreaker');
   if(!el)return;
   el.className='circuit-breaker';
-  if(circuitBreakerState==='warning'){el.className+=' cb-warning';el.textContent='CIRCUIT BREAKER: -10% Drawdown Warning — Tightening stops';}
-  else if(circuitBreakerState==='derisk'){el.className+=' cb-derisk';el.textContent='CIRCUIT BREAKER: -15% De-Risk — Reducing position sizes';}
-  else if(circuitBreakerState==='reduce'){el.className+=' cb-reduce';el.textContent='CIRCUIT BREAKER: -20% — Positions reduced 50%, tighter exits';}
-  else if(circuitBreakerState==='halt'){el.className+=' cb-halt';el.textContent='CIRCUIT BREAKER: -25% HALT — No new trades until recovery';}
+  if(circuitBreakerState==='warning'){el.className+=' cb-warning';el.textContent='CIRCUIT BREAKER: -20% Drawdown Warning — Tightening stops';}
+  else if(circuitBreakerState==='derisk'){el.className+=' cb-derisk';el.textContent='CIRCUIT BREAKER: -30% De-Risk — Reducing position sizes';}
+  else if(circuitBreakerState==='reduce'){el.className+=' cb-reduce';el.textContent='CIRCUIT BREAKER: -40% — Positions reduced 50%, tighter exits';}
+  else if(circuitBreakerState==='halt'){el.className+=' cb-halt';el.textContent='CIRCUIT BREAKER: -50% HALT — No new trades until recovery';}
 }
 
 // Circuit breaker multiplier for position sizing
 function cbSizeMult(){
-  if(circuitBreakerState==='reduce')return 0.5;
-  if(circuitBreakerState==='derisk')return 0.7;
-  if(circuitBreakerState==='warning')return 0.85;
+  if(circuitBreakerState==='reduce')return 0.7;
+  if(circuitBreakerState==='derisk')return 0.85;
+  if(circuitBreakerState==='warning')return 0.95;
   return 1.0;
 }
 function cbSlMult(){
-  if(circuitBreakerState==='reduce')return 0.6;
-  if(circuitBreakerState==='derisk')return 0.75;
-  if(circuitBreakerState==='warning')return 0.85;
+  if(circuitBreakerState==='reduce')return 0.8;
+  if(circuitBreakerState==='derisk')return 0.9;
+  if(circuitBreakerState==='warning')return 0.95;
   return 1.0;
 }
 
@@ -436,7 +436,7 @@ function avgGarchVol(){
 function kellyFraction(stratName){
   if(!brain.learningEnabled)return null;
   const s=brain.strategies[stratName];
-  if(!s||s.trades<30)return null; // Need 30+ trades for reliable Kelly
+  if(!s||s.trades<15)return null; // Need 15+ trades for Kelly (aggressive)
   const W=s.winRate;
   const avgWin=s.recentResults.filter(r=>r.win).reduce((a,r)=>a+r.pnlPct,0);
   const avgLoss=s.recentResults.filter(r=>!r.win).reduce((a,r)=>a+Math.abs(r.pnlPct),0);
@@ -446,8 +446,8 @@ function kellyFraction(stratName){
   const R=(avgWin/wins)/(avgLoss/losses); // Win/loss ratio
   if(R<=0)return null;
   const kelly=W-(1-W)/R;
-  // Half-Kelly for safety, clamped to [0.05, 0.65]
-  return Math.max(0.05,Math.min(0.65,kelly*0.5));
+  // 2/3 Kelly for aggressive sizing, clamped to [0.10, 0.85]
+  return Math.max(0.10,Math.min(0.85,kelly*0.667));
 }
 
 // =============================================================================
@@ -516,19 +516,19 @@ function recalcWeights(){
 
 function recalcThresholds(){
   const sk=brain.streak.current;
-  // Softened penalties — circuit breaker already handles drawdown risk
-  if(sk<=-5){
-    brain.thresholds.slMult=0.75;brain.thresholds.tpMult=0.85;brain.thresholds.entryMult=1.3;
-  }else if(sk<=-3){
-    brain.thresholds.slMult=0.85;brain.thresholds.tpMult=0.9;brain.thresholds.entryMult=1.15;
-  }else if(sk>=5){
-    brain.thresholds.slMult=1.2;brain.thresholds.tpMult=1.3;brain.thresholds.entryMult=0.75;
-  }else if(sk>=3){
-    brain.thresholds.slMult=1.1;brain.thresholds.tpMult=1.2;brain.thresholds.entryMult=0.85;
+  // Minimal streak adjustments — let it trade, paper testing mode
+  if(sk<=-7){
+    brain.thresholds.slMult=0.9;brain.thresholds.tpMult=0.95;brain.thresholds.entryMult=1.1;
+  }else if(sk<=-4){
+    brain.thresholds.slMult=0.95;brain.thresholds.tpMult=0.97;brain.thresholds.entryMult=1.05;
+  }else if(sk>=7){
+    brain.thresholds.slMult=1.15;brain.thresholds.tpMult=1.2;brain.thresholds.entryMult=0.8;
+  }else if(sk>=4){
+    brain.thresholds.slMult=1.1;brain.thresholds.tpMult=1.1;brain.thresholds.entryMult=0.9;
   }else{
-    brain.thresholds.slMult+=(1.0-brain.thresholds.slMult)*0.3;
-    brain.thresholds.tpMult+=(1.0-brain.thresholds.tpMult)*0.3;
-    brain.thresholds.entryMult+=(1.0-brain.thresholds.entryMult)*0.3;
+    brain.thresholds.slMult+=(1.0-brain.thresholds.slMult)*0.5;
+    brain.thresholds.tpMult+=(1.0-brain.thresholds.tpMult)*0.5;
+    brain.thresholds.entryMult+=(1.0-brain.thresholds.entryMult)*0.5;
   }
 }
 
@@ -960,13 +960,13 @@ function composite(pr,risk){
   if(pr.length<MIN_HIST)return{score:0,sigs:[]};
   const rsi=calcRSI(pr),maS=calcMA(pr,MA_S),maL=calcMA(pr,MA_L),mom=calcMom(pr),z=calcZ(pr),vwap=calcVWAP(pr),price=pr[pr.length-1];
   let score=0;const sigs=[];
-  if(rsi<risk.rsiLo){score+=(risk.rsiLo-rsi)/risk.rsiLo*.4;sigs.push('RSI'+rsi.toFixed(0))}
-  else if(rsi>risk.rsiHi){score-=(rsi-risk.rsiHi)/(100-risk.rsiHi)*.4;sigs.push('RSI'+rsi.toFixed(0))}
-  if(maS&&maL){if(maS>maL){score+=.3;sigs.push('MA+')}else{score-=.3;sigs.push('MA-')}}
-  if(mom>risk.momTh){score+=.35;sigs.push('Mom+'+(mom*100).toFixed(2)+'%')}
-  else if(mom<-risk.momTh){score-=.25;sigs.push('Mom'+(mom*100).toFixed(2)+'%')}
-  if(z<-MR_TH){score+=.3;sigs.push('MR')}else if(z>MR_TH){score-=.25;sigs.push('MR')}
-  if(vwap){if(price<vwap*.998){score+=.2;sigs.push('<VWAP')}else if(price>vwap*1.002){score-=.15;sigs.push('>VWAP')}}
+  if(rsi<risk.rsiLo){score+=(risk.rsiLo-rsi)/risk.rsiLo*.5;sigs.push('RSI'+rsi.toFixed(0))}
+  else if(rsi>risk.rsiHi){score-=(rsi-risk.rsiHi)/(100-risk.rsiHi)*.5;sigs.push('RSI'+rsi.toFixed(0))}
+  if(maS&&maL){if(maS>maL){score+=.35;sigs.push('MA+')}else{score-=.35;sigs.push('MA-')}}
+  if(mom>risk.momTh){score+=.4;sigs.push('Mom+'+(mom*100).toFixed(2)+'%')}
+  else if(mom<-risk.momTh){score-=.3;sigs.push('Mom'+(mom*100).toFixed(2)+'%')}
+  if(z<-MR_TH){score+=.35;sigs.push('MR')}else if(z>MR_TH){score-=.3;sigs.push('MR')}
+  if(vwap){if(price<vwap*.999){score+=.25;sigs.push('<VWAP')}else if(price>vwap*1.001){score-=.2;sigs.push('>VWAP')}}
   return{score:Math.max(-1,Math.min(1,score)),sigs};
 }
 
@@ -1012,8 +1012,8 @@ function evaluate(){
   const marketOpen=isUSMarketOpen();
   // 24/7 crypto mode: when stocks are closed, boost crypto allocation
   const cryptoMode=!marketOpen;
-  const cryptoBoost=cryptoMode?1.4:1.0; // 40% more aggressive on crypto signals when stocks unavailable
-  const cryptoMaxPosBoost=cryptoMode?6:0; // Allow more crypto positions when stocks are closed
+  const cryptoBoost=cryptoMode?2.0:1.3; // 2x crypto signals when stocks closed, 1.3x always
+  const cryptoMaxPosBoost=cryptoMode?10:3; // Many more crypto positions allowed
 
   for(const asset of ALL_ASSETS){
     const isStock=asset.type!=='crypto';
@@ -1055,18 +1055,18 @@ function evaluate(){
       buys.push({asset:asset.id,sym:asset.sym,strat:'MeanRev',str:Math.min(Math.abs(z)/2,1)*sigBoost,reason:`Z=${z.toFixed(1)}${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
     else if(z>MR_TH&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'MeanRev',`Z=${z.toFixed(1)} reverted`);}
 
-    if(vwap&&price<vwap*.997&&!hasStockPos)
-      buys.push({asset:asset.id,sym:asset.sym,strat:'VWAP',str:Math.min((vwap-price)/price*80,1)*sigBoost,reason:`${((1-price/vwap)*100).toFixed(2)}% < VWAP${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
+    if(vwap&&price<vwap*.999&&!hasStockPos)
+      buys.push({asset:asset.id,sym:asset.sym,strat:'VWAP',str:Math.min((vwap-price)/price*120,1)*sigBoost,reason:`${((1-price/vwap)*100).toFixed(2)}% < VWAP${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
 
-    if(comp.score>0.06&&!hasStockPos)
+    if(comp.score>0.02&&!hasStockPos)
       buys.push({asset:asset.id,sym:asset.sym,strat:'Composite',str:comp.score*sigBoost,reason:`Score ${comp.score.toFixed(2)} [${comp.sigs.join(',')}]${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
 
     // ===== STOCHASTIC OSCILLATOR =====
     const stoch=calcStochastic(hist);
     if(stoch){
-      if(stoch.k<25&&stoch.d<30&&!hasStockPos)
-        buys.push({asset:asset.id,sym:asset.sym,strat:'Stochastic',str:((30-stoch.k)/30)*sigBoost,reason:`Stoch %K=${stoch.k.toFixed(0)} %D=${stoch.d.toFixed(0)} oversold${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
-      else if(stoch.k>75&&stoch.d>70&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Stochastic',`Stoch %K=${stoch.k.toFixed(0)} overbought`);}
+      if(stoch.k<30&&stoch.d<35&&!hasStockPos)
+        buys.push({asset:asset.id,sym:asset.sym,strat:'Stochastic',str:((35-stoch.k)/35)*sigBoost,reason:`Stoch %K=${stoch.k.toFixed(0)} %D=${stoch.d.toFixed(0)} oversold${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
+      else if(stoch.k>70&&stoch.d>65&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Stochastic',`Stoch %K=${stoch.k.toFixed(0)} overbought`);}
     }
 
     // ===== BOLLINGER BANDS =====
@@ -1077,11 +1077,11 @@ function evaluate(){
       else if(price>bb.upper&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Bollinger',`Above upper BB ($${bb.upper.toFixed(2)})`);}
     }
 
-    // ===== ADX SOFT FILTER — reduce (don't kill) trend signals when ADX is weak =====
+    // ===== ADX SOFT FILTER — barely scale down when ADX is very low =====
     const adx=calcADX(hist);
-    if(adx!==null&&adx<15){
-      // Scale down trend-following signals proportionally (floor at 40% strength)
-      const adxScale=Math.max(0.4, adx/15);
+    if(adx!==null&&adx<10){
+      // Minimal scale-down (floor at 75% strength) — let signals breathe
+      const adxScale=Math.max(0.75, adx/10);
       for(const sig of buys){
         if(sig.asset===asset.id&&(sig.strat==='MA'||sig.strat==='Momentum'))sig.str*=adxScale;
       }
@@ -1093,9 +1093,9 @@ function evaluate(){
       let ups=0,downs=0;
       for(let i=hist.length-3;i<hist.length;i++){if(hist[i]>hist[i-1])ups++;else if(hist[i]<hist[i-1])downs++;}
       const pctMove=(hist[hist.length-1]-hist[hist.length-4])/hist[hist.length-4];
-      if(ups>=3&&pctMove>0.0005)
-        buys.push({asset:asset.id,sym:asset.sym,strat:'Momentum',str:Math.min(pctMove*200,1)*sigBoost,reason:`MicroTrend +${(pctMove*100).toFixed(3)}% (${ups} up)${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
-      if(downs>=3&&pctMove<-0.0005&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Momentum',`MicroTrend ${(pctMove*100).toFixed(3)}% (${downs} dn)`);}
+      if(ups>=3&&pctMove>0.0002)
+        buys.push({asset:asset.id,sym:asset.sym,strat:'Momentum',str:Math.min(pctMove*300,1)*sigBoost,reason:`MicroTrend +${(pctMove*100).toFixed(3)}% (${ups} up)${isCrypto&&cryptoMode?' [24/7]':''}`,isOpt:false});
+      if(downs>=3&&pctMove<-0.0002&&hasStockPos){const p=positions.find(p=>p.asset===asset.id&&!p.isOption);if(p&&tickCount-(p.entryTick||0)>=risk.minHold)sell(p,price,'Momentum',`MicroTrend ${(pctMove*100).toFixed(3)}% (${downs} dn)`);}
     }
 
     // ===== OPTIONS SIGNALS =====
@@ -1106,7 +1106,7 @@ function evaluate(){
       const T_years=T_ticks/2400;
 
       // CALL: Strong bullish signal
-      if(comp.score>0.04&&!hasOptPos&&optCount<risk.optMaxPos){
+      if(comp.score>0.02&&!hasOptPos&&optCount<risk.optMaxPos){
         const strike=price*(0.97+Math.random()*0.04); // Slightly ITM to ATM
         const premium=blackScholes(price,strike,T_years,0.05,iv,'call');
         if(premium>0.01){
@@ -1117,7 +1117,7 @@ function evaluate(){
       }
 
       // PUT: Strong bearish signal (hedge or directional bet)
-      if(comp.score<-0.04&&!hasOptPos&&optCount<risk.optMaxPos){
+      if(comp.score<-0.02&&!hasOptPos&&optCount<risk.optMaxPos){
         const strike=price*(1.0+Math.random()*0.04); // ATM to slightly ITM
         const premium=blackScholes(price,strike,T_years,0.05,iv,'put');
         if(premium>0.01){
@@ -1161,15 +1161,15 @@ function evaluate(){
     for(const op of optPositions){
       const curOptVal=op.optionPrice*op.contracts*100;
       const optPnlPct=(curOptVal-op.costBasis)/op.costBasis;
-      // Take profit on options at 30%+ gain (let winners run)
-      if(optPnlPct>0.30){
+      // Take profit on options at 50%+ gain (let winners really run)
+      if(optPnlPct>0.50){
         const pnl=curOptVal-op.costBasis;
         cash+=curOptVal;
         positions=positions.filter(p=>p.id!==op.id);
         recordSell(op,op.optionPrice,pnl,'TakeProfit',`Option +${(optPnlPct*100).toFixed(1)}% gain`);
       }
-      // Stop loss on options at -20%
-      else if(optPnlPct<-0.20){
+      // Stop loss on options at -35% (wider — let it recover)
+      else if(optPnlPct<-0.35){
         const pnl=curOptVal-op.costBasis;
         cash+=curOptVal;
         positions=positions.filter(p=>p.id!==op.id);
@@ -1195,9 +1195,9 @@ function evaluate(){
     let dynSl=risk.sl, dynTp=risk.tp, dynTrail=risk.trail;
     if(atr&&pos.entryPrice>0){
       const atrPct=atr/pos.entryPrice;
-      dynSl=-Math.max(atrPct*2.5, Math.abs(risk.sl)*0.7); // Floor at 70% of base SL
-      dynTp=Math.max(atrPct*7.5, risk.tp*0.8); // 3:1 R:R vs SL, floor at 80% of base TP
-      dynTrail=Math.max(atrPct*2, risk.trail*0.7);
+      dynSl=-Math.max(atrPct*3.5, Math.abs(risk.sl)*0.5); // Wider SL — let trades breathe
+      dynTp=Math.max(atrPct*10, risk.tp*0.6); // ~3:1 R:R, room for big winners
+      dynTrail=Math.max(atrPct*3, risk.trail*0.5); // Wider trail — don't cut winners early
     }
     const adjSl=dynSl*brainSl*cbSl;
     const adjTp=dynTp*brainTp;
@@ -1288,7 +1288,7 @@ function evaluate(){
       if(positions.length>=maxPos)continue;
       if(positions.some(p=>p.asset===sig.asset&&!p.isOption))continue;
       // In crypto-only mode, allow larger position sizes since it's the only game in town
-      const posBoost=cryptoMode&&CRYPTO.some(c=>c.id===sig.asset)?1.3:1.0;
+      const posBoost=CRYPTO.some(c=>c.id===sig.asset)?(cryptoMode?1.8:1.3):1.0;
       // Kelly Criterion position sizing (when enough data)
       const kelly=kellyFraction(sig.strat);
       const kellyPct=kelly!==null?kelly:getRisk().maxPosPct;
@@ -1297,12 +1297,12 @@ function evaluate(){
       let atrSizeMult=1.0;
       if(atr&&curPrices[sig.asset]){
         const atrPct=atr/curPrices[sig.asset];
-        // Inverse volatility: smaller positions when vol is high
-        atrSizeMult=Math.max(0.3,Math.min(1.5,0.005/Math.max(atrPct,0.0001)));
+        // Inverse volatility: slightly smaller positions when vol is extreme
+        atrSizeMult=Math.max(0.6,Math.min(2.0,0.008/Math.max(atrPct,0.0001)));
       }
       const maxInv=tv*kellyPct*posBoost*cbSizeMult()*atrSizeMult;
       const amount=Math.min(maxInv,cash*0.98);
-      if(amount<3)continue;
+      if(amount<1)continue;
       buy(sig.asset,sig.sym,amount,sig.strat,sig.reason);
     }
   }

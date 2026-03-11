@@ -28,7 +28,10 @@
       "Bash(curl -s http://localhost:5050/api/live/markets 2>&1 | python -c \"\nimport sys, json\nmarkets = json.load\\(sys.stdin\\)\nprint\\('Total markets with estimates:', len\\(markets\\)\\)\nprint\\(\\)\nprint\\('Top 10 edge opportunities:'\\)\nfor m in markets[:10]:\n    print\\(f'  {m[\\\\\"edge\\\\\"]*100:+.2f}% edge | {m[\\\\\"direction\\\\\"]} | {m[\\\\\"category\\\\\"]:10s} | {m[\\\\\"confidence\\\\\"]*100:.0f}% conf | {m[\\\\\"question\\\\\"][:60]}'\\)\nprint\\(\\)\ncats = {}\nfor m in markets:\n    c = m['category']\n    if c not in cats: cats[c] = 0\n    cats[c] += 1\nprint\\('By category:', dict\\(sorted\\(cats.items\\(\\), key=lambda x: -x[1]\\)\\)\\)\n\" 2>&1)",
       "Bash(curl -s http://localhost:5050/api/live/portfolio 2>&1 | python -c \"\nimport sys, json\np = json.load\\(sys.stdin\\)\nprint\\('Cash:', p['cash']\\)\nprint\\('Portfolio Value:', p['portfolio_value']\\)\nprint\\('Open Positions:', p['open_positions']\\)\nprint\\('Total Trades:', p['total_trades']\\)\nfor pos in p['positions']:\n    print\\(f'  [{pos[\\\\\"position_id\\\\\"]}] {pos[\\\\\"direction\\\\\"]} | {pos[\\\\\"question\\\\\"][:50]} | entry={pos[\\\\\"entry_price\\\\\"]:.4f} | P&L={pos[\\\\\"unrealized_pnl\\\\\"]}'\\)\n\" 2>&1)",
       "Bash(curl -s -X POST http://localhost:5050/api/live/stop 2>&1)",
-      "Bash(taskkill //F //IM python.exe 2>/dev/null; echo \"done\")"
+      "Bash(taskkill //F //IM python.exe 2>/dev/null; echo \"done\")",
+      "Bash(find C:/Users/yarden -maxdepth 4 -name \"quant*\" -type d 2>/dev/null; find C:/Users/yarden -maxdepth 4 -name \"quant*\" -type f 2>/dev/null | head -20)",
+      "Bash(cd /c/Users/yarden/quant-engine-local && python main.py --no-ui --tickers SPY QQQ AAPL MSFT NVDA --years 3 2>&1)",
+      "Bash(cd /c/Users/yarden/quant-engine-local && python main.py --no-ui 2>&1)"
     ]
   }
 }

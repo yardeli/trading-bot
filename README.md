@@ -545,3 +545,46 @@ These can all be adjusted from the web dashboard's Configure panel before runnin
 - `trading-bot/README.md` — This documentation file
 
 **Research incorporated** from `C:\Users\yarden\Desktop\trading-research\` (5 documents covering core strategies, ML approaches, risk management, technical indicators, and backtesting frameworks). All findings mapped to implementation in the Research Notes tab.
+
+---
+
+### v4.2 — Quant Engine Performance Fix (2026-03-11)
+
+**Problem:** Backtest hung at day ~762/1379 with the full 25-ticker, 5-year universe. Root cause: O(n²) memory/compute growth from passing progressively growing DataFrame slices to the signal aggregator and rebuilding the equity curve from scratch every rebalance.
+
+**Fixes:**
+
+- `quant-engine/backtest/engine.py`:
+  - Signal slices now bounded to last 300 days (`AGG_LOOKBACK`) instead of full `sig_df.loc[:date]` history
+  - Returns passed to aggregator bounded to same 300-day window via index lookup
+  - Equity curve built incrementally with parallel `equity_dates`/`equity_vals` lists instead of rebuilding `pd.Series({e["date"]: e["equity"] for e in equity_values})` from growing dict each rebalance
+  - Rebalance date lookup converted from `date in rebalance_dates.values` (O(n) scan) to `set()` lookup (O(1))
+
+- `quant-engine/ensemble/aggregator.py`:
+  - `_compute_rolling_ic()` now only computes IC over last 126 rows instead of looping through entire signal history
+  - `scipy.stats.spearmanr` import moved outside loop (was re-imported every iteration)
+
+**Result:** Full backtest (25 assets, 5 years, 1379 days, 226 rebalances) completes in ~2 minutes. Previously hung indefinitely at day 762.
+
+---
+
+### v6.2 — Aggressive Crypto Trading Overhaul (2026-03-11)
+
+**Problem:** Crypto trades rarely generated meaningful profit or loss. Compounding safety layers (circuit breaker + brain penalties + ATR dampening + ADX filter + tight entries + half-Kelly + tight stops) multiplied together to create microscopic positions with near-zero P&L.
+
+**Changes to `paper-trader-v4.html`:**
+
+- **YOLO risk preset** — maxPosPct: 70%→85%, maxPos: 10→15, SL: -2%→-3.5%, TP: 6%→10%, trail: 1.5%→2.5%, momTh: 0.1%→0.05%, optMaxPos: 8→10, minHold: 3→1 tick
+- **Circuit breaker widened** — warning: -10%→-20%, derisk: -15%→-30%, reduce: -20%→-40%, halt: -25%→-50%. Size/SL multipliers softened (warning 0.95x not 0.85x, reduce 0.7x not 0.5x)
+- **Kelly Criterion** — 2/3 Kelly instead of half-Kelly, clamped [10%-85%] instead of [5%-65%], activates after 15 trades (was 30)
+- **Brain streak penalties gutted** — loss streaks barely affect thresholds now (3 losses: entryMult 1.05 not 1.15, slMult 0.95 not 0.85). Faster reversion to neutral (0.5 decay not 0.3)
+- **Crypto signal boost** — always 1.3x (was 1.0x when stocks open), 2.0x when stocks closed (was 1.4x). Position size boost 1.8x in crypto-only mode (was 1.3x). +10 extra positions in crypto mode (was +6), +3 always (was 0)
+- **Entry thresholds slashed** — Composite: 0.06→0.02, Options: 0.04→0.02, VWAP: 0.3%→0.1% discount, Stochastic: K<25→K<30, MicroTrend: 0.05%→0.02%
+- **Composite score weights boosted** — RSI: 0.4→0.5, MA: 0.3→0.35, Momentum: 0.35→0.4, MeanRev: 0.3→0.35, VWAP: 0.2→0.25 (all signals contribute more)
+- **ATR stops widened** — SL: 2.5x→3.5x ATR, TP: 7.5x→10x ATR, Trail: 2x→3x ATR. Floor lowered to 50% of base (was 70-80%)
+- **ATR position sizing** — floor raised 0.3→0.6, ceiling raised 1.5→2.0, reference vol 0.005→0.008 (positions 60%+ bigger)
+- **ADX filter nearly removed** — only activates below ADX 10 (was 15), floor at 75% strength (was 40%)
+- **Option exits widened** — TP: 30%→50%, SL: -20%→-35%
+- **Min trade size** — $3→$1
+
+**Result:** More frequent trades, bigger positions, wider stops allowing trades to actually move, crypto especially active. The brain still learns and adapts, just without choking out new trades.

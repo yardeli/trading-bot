@@ -2,10 +2,11 @@
 
 ## Overview
 
-This repository contains two interconnected trading systems:
+This repository contains three trading systems:
 
 1. **Paper Trading Terminal (v6)** — A real-time paper trading simulator with adaptive ML brain, GARCH volatility, Kelly sizing, and circuit breakers (`paper-trader-v4.html`)
 2. **Quantitative Engine** — An institutional-grade backtesting engine with a web dashboard (`quant-engine/`)
+3. **Polymarket Backtester** — Reality arbitrage and spread arb backtesting for prediction markets (`C:\Users\yarden\polymarket-bot\`)
 
 The quant engine powers the analytical backend. It downloads real market data, runs six alpha models simultaneously, constructs optimized portfolios, enforces risk limits, and simulates execution with realistic transaction costs. Results are displayed in a live web dashboard styled to match the paper trading terminal.
 

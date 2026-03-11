@@ -2,7 +2,33 @@
   "permissions": {
     "allow": [
       "Bash(cd /c/Users/yarden/trading-bot/quant-engine && node validate.js)",
-      "Bash(node validate.js)"
+      "Bash(node validate.js)",
+      "Bash(python main.py --synthetic --strategy all 2>&1)",
+      "Bash(python -c \"\nfrom data.fetcher import fetch_sports_markets\nmarkets = fetch_sports_markets\\(limit=5, days_back=30\\)\nfor m in markets[:5]:\n    print\\(f'  {m[\\\\\"question\\\\\"][:70]}  vol={m.get\\(\\\\\"volume\\\\\",0\\)}'\\)\nprint\\(f'Total: {len\\(markets\\)} markets'\\)\n\" 2>&1)",
+      "Bash(pip install:*)",
+      "Bash(cd C:/Users/yarden/polymarket-bot && python server.py 2>&1)",
+      "Bash(curl -s http://localhost:5050/api/config 2>&1)",
+      "Bash(curl -s -X POST http://localhost:5050/api/backtest -H \"Content-Type: application/json\" -d \"{\\\\\"strategy\\\\\":\\\\\"all\\\\\",\\\\\"use_synthetic\\\\\":true}\" 2>&1 | python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Status:', d['status']\\); [print\\(f\\\\\"  {r['strategy']}: {r['total_trades']} trades, P&L ${r['total_pnl']}, WR {r['win_rate']}%\\\\\"\\) for r in d['results']]\")",
+      "Bash(curl -s -X POST http://localhost:5050/api/backtest -H \"Content-Type: application/json\" -d \"{\\\\\"strategy\\\\\":\\\\\"all\\\\\",\\\\\"use_synthetic\\\\\":true}\" 2>&1 | python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Status:', d['status']\\); results=d['results']; [print\\('  '+r['strategy']+': '+str\\(r['total_trades']\\)+' trades, PnL $'+str\\(r['total_pnl']\\)+', WR '+str\\(r['win_rate']\\)+'%%'\\) for r in results]\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{size_download}\" http://localhost:5050/ 2>&1)",
+      "Bash(curl -s -X POST http://localhost:5050/api/backtest -H \"Content-Type: application/json\" -d \"{\\\\\"strategy\\\\\":\\\\\"arb\\\\\",\\\\\"use_synthetic\\\\\":true}\" 2>&1 | python -c \"\nimport sys, json\nd = json.load\\(sys.stdin\\)\nr = d['results'][0]\neq = r['equity_curve']\nprint\\('Equity curve points:', len\\(eq\\)\\)\nif eq:\n    print\\('First:', eq[0]\\)\n    print\\('Last:', eq[-1]\\)\n    print\\('Has equity key:', 'equity' in eq[0] if isinstance\\(eq[0], dict\\) else 'NOT A DICT - type: '+str\\(type\\(eq[0]\\)\\)\\)\ntrades = r['trades']\nprint\\('Trade count:', len\\(trades\\)\\)\nif trades:\n    t = trades[0]\n    print\\('Trade keys:', list\\(t.keys\\(\\)\\)\\)\n    print\\('Has net_pnl:', 'net_pnl' in t\\)\n    print\\('Has edge:', 'edge' in t\\)\n    print\\('Has sport:', 'sport' in t\\)\n    print\\('Has direction:', 'direction' in t\\)\nby_sport = r['by_sport']\nprint\\('Sports:', list\\(by_sport.keys\\(\\)\\)\\)\nif by_sport:\n    k = list\\(by_sport.keys\\(\\)\\)[0]\n    print\\('Sport data keys:', list\\(by_sport[k].keys\\(\\)\\)\\)\n\")",
+      "Bash(taskkill //F //FI \"WINDOWTITLE eq *server.py*\" 2>/dev/null; pkill -f \"python server.py\" 2>/dev/null; echo \"done\")",
+      "Bash(ls /c/Users/yarden/polymarket-bot/paper-trader-v*.html)",
+      "Read(//c/Users/yarden//**)",
+      "Bash(cd C:/Users/yarden/polymarket-bot && python test_live.py 2>&1)",
+      "Bash(sleep 2 && curl -s http://localhost:5050/api/live/status 2>&1)",
+      "Bash(python -c \"import requests; r=requests.get\\('http://localhost:5050/api/live/status'\\); print\\(r.status_code, r.text[:200]\\)\" 2>&1 || echo \"failed\")",
+      "Bash(taskkill //F //IM python.exe 2>/dev/null; taskkill //F //IM python3.exe 2>/dev/null; sleep 1; echo \"killed\")",
+      "Bash(sleep 3 && curl -s http://localhost:5050/api/live/status 2>&1)",
+      "Bash(curl -s http://localhost:5050/api/live/portfolio 2>&1 | python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Portfolio:', d['cash'], 'cash,', d['open_positions'], 'open,', d['total_trades'], 'trades'\\)\")",
+      "Bash(curl -s http://localhost:5050/api/live/brain 2>&1 | python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Brain:', d['total_trades'], 'trades, streak', d['streak'], ', regime:', d['regime']\\)\")",
+      "Bash(curl -s http://localhost:5050/api/live/markets 2>&1 | python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Markets:', len\\(d\\), 'estimates'\\)\")",
+      "Bash(curl -s -X POST http://localhost:5050/api/live/start 2>&1)",
+      "Bash(sleep 15 && curl -s http://localhost:5050/api/live/status 2>&1 | python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Running:', d['running'], '| Cycle:', d['cycle_count'], '| Markets:', d['markets_tracked'], '| Errors:', d['error_count']\\)\")",
+      "Bash(curl -s http://localhost:5050/api/live/markets 2>&1 | python -c \"\nimport sys, json\nmarkets = json.load\\(sys.stdin\\)\nprint\\('Total markets with estimates:', len\\(markets\\)\\)\nprint\\(\\)\nprint\\('Top 10 edge opportunities:'\\)\nfor m in markets[:10]:\n    print\\(f'  {m[\\\\\"edge\\\\\"]*100:+.2f}% edge | {m[\\\\\"direction\\\\\"]} | {m[\\\\\"category\\\\\"]:10s} | {m[\\\\\"confidence\\\\\"]*100:.0f}% conf | {m[\\\\\"question\\\\\"][:60]}'\\)\nprint\\(\\)\ncats = {}\nfor m in markets:\n    c = m['category']\n    if c not in cats: cats[c] = 0\n    cats[c] += 1\nprint\\('By category:', dict\\(sorted\\(cats.items\\(\\), key=lambda x: -x[1]\\)\\)\\)\n\" 2>&1)",
+      "Bash(curl -s http://localhost:5050/api/live/portfolio 2>&1 | python -c \"\nimport sys, json\np = json.load\\(sys.stdin\\)\nprint\\('Cash:', p['cash']\\)\nprint\\('Portfolio Value:', p['portfolio_value']\\)\nprint\\('Open Positions:', p['open_positions']\\)\nprint\\('Total Trades:', p['total_trades']\\)\nfor pos in p['positions']:\n    print\\(f'  [{pos[\\\\\"position_id\\\\\"]}] {pos[\\\\\"direction\\\\\"]} | {pos[\\\\\"question\\\\\"][:50]} | entry={pos[\\\\\"entry_price\\\\\"]:.4f} | P&L={pos[\\\\\"unrealized_pnl\\\\\"]}'\\)\n\" 2>&1)",
+      "Bash(curl -s -X POST http://localhost:5050/api/live/stop 2>&1)",
+      "Bash(taskkill //F //IM python.exe 2>/dev/null; echo \"done\")"
     ]
   }
 }

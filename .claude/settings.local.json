@@ -42,7 +42,21 @@
       "Bash(curl -s \"https://api.allorigins.win/raw?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FAAPL%3Finterval%3D5m%26range%3D1d%26includePrePost%3Dfalse\" 2>&1 | head -c 300)",
       "Bash(curl -s \"https://corsproxy.io/?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FAAPL%3Finterval%3D5m%26range%3D1d%26includePrePost%3Dfalse\" 2>&1 | head -c 300)",
       "Bash(curl -s \"https://api.codetabs.com/v1/proxy?quest=https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=5m&range=1d&includePrePost=false\" 2>&1 | head -c 300)",
-      "Bash(curl -s \"https://api.allorigins.win/get?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FAAPL%3Finterval%3D5m%26range%3D1d%26includePrePost%3Dfalse\" 2>&1 | head -c 300)"
+      "Bash(curl -s \"https://api.allorigins.win/get?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FAAPL%3Finterval%3D5m%26range%3D1d%26includePrePost%3Dfalse\" 2>&1 | head -c 300)",
+      "WebFetch(domain:unusualwhales.com)",
+      "Bash(find /c/Users/yarden/trading-bot -type f \\\\\\( -name \".env*\" -o -name \"*.env\" \\\\\\) 2>/dev/null | head -20)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:registry.npmjs.org)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx -y @unusualwhales/mcp --help 2>&1 | head -50)",
+      "WebFetch(domain:docs.unusualwhales.com)",
+      "WebSearch",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\" \"https://paper-api.alpaca.markets/v2/account\" -H \"APCA-API-KEY-ID: PKA4ZJAUHC2XSXBMVFISRR7H2Q\" -H \"APCA-API-SECRET-KEY: FnbWgaFKFzqEkEoroSA9ioXPJUTZm1SGyM894pUfH1dE\" 2>/dev/null | head -20)",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\" \"https://data.alpaca.markets/v2/stocks/trades/latest?symbols=AAPL,MSFT&feed=iex\" -H \"APCA-API-KEY-ID: PKA4ZJAUHC2XSXBMVFISRR7H2Q\" -H \"APCA-API-SECRET-KEY: FnbWgaFKFzqEkEoroSA9ioXPJUTZm1SGyM894pUfH1dE\" 2>/dev/null | head -20)",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\" \"https://data.alpaca.markets/v1beta3/crypto/us/latest/trades?symbols=BTC/USD,ETH/USD\" -H \"APCA-API-KEY-ID: PKA4ZJAUHC2XSXBMVFISRR7H2Q\" -H \"APCA-API-SECRET-KEY: FnbWgaFKFzqEkEoroSA9ioXPJUTZm1SGyM894pUfH1dE\" 2>/dev/null | head -20)",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\" -X POST \"https://paper-api.alpaca.markets/v2/orders\" -H \"APCA-API-KEY-ID: PKA4ZJAUHC2XSXBMVFISRR7H2Q\" -H \"APCA-API-SECRET-KEY: FnbWgaFKFzqEkEoroSA9ioXPJUTZm1SGyM894pUfH1dE\" -H \"Content-Type: application/json\" -d '{\"symbol\":\"AAPL\",\"qty\":\"0.01\",\"side\":\"buy\",\"type\":\"market\",\"time_in_force\":\"day\"}' 2>/dev/null | python3 -m json.tool 2>/dev/null || cat)",
+      "Bash(curl -s -m 10 -X POST \"https://paper-api.alpaca.markets/v2/orders\" -H \"APCA-API-KEY-ID: PKA4ZJAUHC2XSXBMVFISRR7H2Q\" -H \"APCA-API-SECRET-KEY: FnbWgaFKFzqEkEoroSA9ioXPJUTZm1SGyM894pUfH1dE\" -H \"Content-Type: application/json\" -d \"{\\\\\"symbol\\\\\":\\\\\"AAPL\\\\\",\\\\\"qty\\\\\":\\\\\"1\\\\\",\\\\\"side\\\\\":\\\\\"buy\\\\\",\\\\\"type\\\\\":\\\\\"market\\\\\",\\\\\"time_in_force\\\\\":\\\\\"day\\\\\"}\" 2>/dev/null)",
+      "Bash(curl -s -m 10 -X DELETE \"https://paper-api.alpaca.markets/v2/orders\" -H \"APCA-API-KEY-ID: PKA4ZJAUHC2XSXBMVFISRR7H2Q\" -H \"APCA-API-SECRET-KEY: FnbWgaFKFzqEkEoroSA9ioXPJUTZm1SGyM894pUfH1dE\" 2>/dev/null)"
     ]
   }
 }

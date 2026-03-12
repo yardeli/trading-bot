@@ -158,8 +158,12 @@ tr:hover td{background:rgba(30,45,69,.3)}
     </select>
   </div>
   <div class="ctrl-group">
-    <label>Twelve Data Key <a href="https://twelvedata.com/pricing" target="_blank" style="color:var(--blue);text-decoration:none">(free)</a></label>
-    <input type="text" id="tdKey" placeholder="demo (built-in)" style="min-width:160px" oninput="saveTDKey()">
+    <label>Alpaca Key</label>
+    <input type="text" id="alpacaKeyInput" placeholder="APCA-API-KEY-ID" style="min-width:140px" oninput="saveAlpacaKeys()">
+  </div>
+  <div class="ctrl-group">
+    <label>Alpaca Secret</label>
+    <input type="password" id="alpacaSecretInput" placeholder="Secret" style="min-width:140px" oninput="saveAlpacaKeys()">
   </div>
   <div class="ctrl-group" style="align-self:flex-end">
     <button class="btn btn-brain" onclick="importBrain()">Import Brain</button>
@@ -233,9 +237,8 @@ tr:hover td{background:rgba(30,45,69,.3)}
     <div style="max-width:500px;margin:0 auto;line-height:1.8">
       Select a date and click <b>Run Backtest</b> to simulate the paper trader's 8 strategies
       against real intraday price data.<br><br>
-      <b>Crypto:</b> Works out of the box (Binance).<br>
-      <b>Stocks:</b> Requires a free <a href="https://twelvedata.com/pricing" target="_blank" style="color:var(--blue)">Twelve Data API key</a>
-      (no credit card, takes 10 seconds). Paste it in the "Twelve Data Key" field.<br><br>
+      <b>Stocks + Crypto:</b> Requires <a href="https://app.alpaca.markets/signup" target="_blank" style="color:var(--blue)">Alpaca Markets API keys</a> (free paper trading account).
+      Paste your Key and Secret in the fields above.<br><br>
       Optionally <b>Import Brain</b> from a quant-engine export or native brain file
       to test with learned strategy weights and regime detection.
     </div>
@@ -247,20 +250,20 @@ tr:hover td{background:rgba(30,45,69,.3)}
 // CONFIG
 // =============================================================================
 const CRYPTO = [
-  {id:'BTC',sym:'BTC',name:'Bitcoin',type:'crypto',binance:'BTCUSDT'},
-  {id:'ETH',sym:'ETH',name:'Ethereum',type:'crypto',binance:'ETHUSDT'},
-  {id:'SOL',sym:'SOL',name:'Solana',type:'crypto',binance:'SOLUSDT'},
-  {id:'ADA',sym:'ADA',name:'Cardano',type:'crypto',binance:'ADAUSDT'},
-  {id:'AVAX',sym:'AVAX',name:'Avalanche',type:'crypto',binance:'AVAXUSDT'},
-  {id:'LINK',sym:'LINK',name:'Chainlink',type:'crypto',binance:'LINKUSDT'},
-  {id:'DOT',sym:'DOT',name:'Polkadot',type:'crypto',binance:'DOTUSDT'},
-  {id:'XRP',sym:'XRP',name:'XRP',type:'crypto',binance:'XRPUSDT'},
-  {id:'DOGE',sym:'DOGE',name:'Dogecoin',type:'crypto',binance:'DOGEUSDT'},
-  {id:'POL',sym:'POL',name:'Polygon',type:'crypto',binance:'POLUSDT'},
-  {id:'SUI',sym:'SUI',name:'Sui',type:'crypto',binance:'SUIUSDT'},
-  {id:'PEPE',sym:'PEPE',name:'Pepe',type:'crypto',binance:'PEPEUSDT'},
-  {id:'NEAR',sym:'NEAR',name:'NEAR',type:'crypto',binance:'NEARUSDT'},
-  {id:'LTC',sym:'LTC',name:'Litecoin',type:'crypto',binance:'LTCUSDT'},
+  {id:'BTC',sym:'BTC',name:'Bitcoin',type:'crypto',alpacaSym:'BTC/USD'},
+  {id:'ETH',sym:'ETH',name:'Ethereum',type:'crypto',alpacaSym:'ETH/USD'},
+  {id:'SOL',sym:'SOL',name:'Solana',type:'crypto',alpacaSym:'SOL/USD'},
+  {id:'ADA',sym:'ADA',name:'Cardano',type:'crypto',alpacaSym:'ADA/USD'},
+  {id:'AVAX',sym:'AVAX',name:'Avalanche',type:'crypto',alpacaSym:'AVAX/USD'},
+  {id:'LINK',sym:'LINK',name:'Chainlink',type:'crypto',alpacaSym:'LINK/USD'},
+  {id:'DOT',sym:'DOT',name:'Polkadot',type:'crypto',alpacaSym:'DOT/USD'},
+  {id:'XRP',sym:'XRP',name:'XRP',type:'crypto',alpacaSym:'XRP/USD'},
+  {id:'DOGE',sym:'DOGE',name:'Dogecoin',type:'crypto',alpacaSym:'DOGE/USD'},
+  {id:'POL',sym:'POL',name:'Polygon',type:'crypto',alpacaSym:'POL/USD'},
+  {id:'SUI',sym:'SUI',name:'Sui',type:'crypto',alpacaSym:'SUI/USD'},
+  {id:'PEPE',sym:'PEPE',name:'Pepe',type:'crypto',alpacaSym:'PEPE/USD'},
+  {id:'NEAR',sym:'NEAR',name:'NEAR',type:'crypto',alpacaSym:'NEAR/USD'},
+  {id:'LTC',sym:'LTC',name:'Litecoin',type:'crypto',alpacaSym:'LTC/USD'},
 ];
 
 const STOCKS = [
@@ -411,99 +414,94 @@ function composite(pr,risk){
 }
 
 // =============================================================================
-// DATA FETCHING — Twelve Data (stocks) + Binance (crypto)
+// DATA FETCHING — Alpaca Markets API (stocks + crypto)
 // =============================================================================
-let tdKeyCustom=localStorage.getItem('czwm_td_key')||'';
+const ALPACA_DATA_URL='https://data.alpaca.markets';
+let alpacaKey=localStorage.getItem('czwm_alpaca_key')||'';
+let alpacaSecret=localStorage.getItem('czwm_alpaca_secret')||'';
 
-function getTDKey(){return tdKeyCustom||'';}
-let stockFetchWarned=false;
+function getAlpacaKey(){return alpacaKey||'';}
+function getAlpacaSecret(){return alpacaSecret||'';}
 
-async function fetchStockCandles(sym,dateStr,resolution){
-  const key=getTDKey();
-  if(!key){
-    if(!stockFetchWarned){
-      stockFetchWarned=true;
-      console.warn('No Twelve Data API key — stock data unavailable. Get a free key at https://twelvedata.com/pricing');
-    }
-    return null;
-  }
-  // Twelve Data time_series — free tier: 800 calls/day, 8/min, CORS enabled
-  const intervalMap={'1':'1min','5':'5min','15':'15min','60':'1h'};
-  const interval=intervalMap[resolution]||'5min';
-  const url=`https://api.twelvedata.com/time_series?symbol=${sym}&interval=${interval}&date=${dateStr}&outputsize=500&apikey=${key}`;
+async function alpacaFetch(endpoint,params){
+  const key=getAlpacaKey(),secret=getAlpacaSecret();
+  if(!key||!secret)return null;
+  const url=new URL(endpoint,ALPACA_DATA_URL);
+  if(params){for(const[k,v] of Object.entries(params)){if(v===undefined||v===null||v==='')continue;url.searchParams.append(k,String(v));}}
   try{
-    const r=await fetch(url,{signal:AbortSignal.timeout(15000)});
-    if(!r.ok){console.warn(`TwelveData ${sym}: HTTP ${r.status}`);return null;}
-    const data=await r.json();
-    if(data.code===401||data.code===429){
-      console.warn(`TwelveData ${sym}: ${data.message}`);
+    const r=await fetch(url.toString(),{
+      method:'GET',
+      headers:{'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret,'Accept':'application/json'},
+      signal:AbortSignal.timeout(15000)
+    });
+    if(!r.ok){
+      const errText=await r.text().catch(()=>'');
+      console.warn(`Alpaca ${endpoint}: HTTP ${r.status} ${errText.slice(0,200)}`);
       return null;
     }
-    if(data.status==='error'){console.warn(`TwelveData ${sym}: ${data.message}`);return null;}
-    if(!data.values||data.values.length===0){console.warn(`TwelveData ${sym}: no values`);return null;}
-    // TwelveData returns newest first — reverse to chronological order
-    return data.values.reverse().map(v=>({
-      time:new Date(v.datetime).getTime(),
-      open:+v.open,high:+v.high,low:+v.low,close:+v.close,volume:+v.volume
-    }));
-  }catch(e){console.warn(`TwelveData ${sym}:`,e.message);return null;}
+    return await r.json();
+  }catch(e){console.warn(`Alpaca ${endpoint}:`,e.message);return null;}
 }
 
-async function fetchCryptoCandles(binanceSym,dateStr,resolution){
-  // Binance klines
-  const d=new Date(dateStr+'T00:00:00');
-  const startTime=d.getTime();
-  const endTime=startTime+86400000;
-  const intervalMap={'1':'1m','5':'5m','15':'15m','60':'1h'};
-  const interval=intervalMap[resolution]||'5m';
-  const url=`https://api.binance.us/api/v3/klines?symbol=${binanceSym}&interval=${interval}&startTime=${startTime}&endTime=${endTime}&limit=1000`;
-  try{
-    const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok){
-      // Fallback to binance.com for non-US users
-      const url2=`https://api.binance.com/api/v3/klines?symbol=${binanceSym}&interval=${interval}&startTime=${startTime}&endTime=${endTime}&limit=1000`;
-      const r2=await fetch(url2,{signal:AbortSignal.timeout(10000)});
-      if(!r2.ok)return null;
-      const data=await r2.json();
-      return data.map(k=>({time:k[0],open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
-    }
-    const data=await r.json();
-    return data.map(k=>({time:k[0],open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
-  }catch(e){console.warn(`Binance ${binanceSym}:`,e.message);return null;}
+// Normalize Alpaca bars → [{time,open,high,low,close,volume}, ...]
+// Alpaca returns: {bars: {SYMBOL: [{t,o,h,l,c,v}, ...]}} for multi-symbol
+function normalizeAlpacaBars(barsArray){
+  if(!barsArray||!Array.isArray(barsArray)||barsArray.length===0)return null;
+  return barsArray.map(b=>({
+    time:new Date(b.t).getTime(),
+    open:+b.o, high:+b.h, low:+b.l, close:+b.c,
+    volume:+(b.v||0)
+  })).filter(c=>c.time>0).sort((a,b)=>a.time-b.time);
 }
 
 async function fetchAllData(dateStr,resolution,assets){
   const status=document.getElementById('statusText');
   const progress=document.getElementById('progressBar');
   const allCandles={};
-  let loaded=0,total=assets.length;
-  let stockCount=0;
 
-  for(let i=0;i<assets.length;i++){
-    const a=assets[i];
-    status.textContent=`Fetching ${a.sym} (${i+1}/${total})...`;
-    progress.style.width=((i/total)*40)+'%';
+  // Map resolution to Alpaca timeframe
+  const tfMap={'1':'1Min','5':'5Min','15':'15Min','60':'1Hour'};
+  const timeframe=tfMap[resolution]||'5Min';
 
-    let candles=null;
-    if(a.type==='crypto'){
-      candles=await fetchCryptoCandles(a.binance,dateStr,resolution);
-    }else{
-      candles=await fetchStockCandles(a.sym,dateStr,resolution);
-      stockCount++;
-      // Twelve Data free tier: 8 requests/minute — pace requests
-      if(stockCount>0&&stockCount%8===0){
-        status.textContent=`Rate limit pause (${total-i-1} remaining)...`;
-        await new Promise(r=>setTimeout(r,62000)); // Wait 62s after every 8 stocks
-      }else{
-        await new Promise(r=>setTimeout(r,500)); // 0.5s between each stock call
+  // Build date range for the trading day
+  const start=dateStr+'T00:00:00Z';
+  const endDate=new Date(dateStr);
+  endDate.setDate(endDate.getDate()+1);
+  const end=endDate.toISOString().slice(0,10)+'T00:00:00Z';
+
+  // Fetch stocks in batch (Alpaca supports multi-symbol)
+  const stockAssets=assets.filter(a=>a.type!=='crypto');
+  const cryptoAssets=assets.filter(a=>a.type==='crypto');
+  let loaded=0;
+
+  if(stockAssets.length>0){
+    status.textContent='Fetching stock data...';
+    progress.style.width='10%';
+    const syms=stockAssets.map(a=>a.sym).join(',');
+    const data=await alpacaFetch('/v2/stocks/bars',{symbols:syms,timeframe,start,end,limit:10000,feed:'iex'});
+    if(data&&data.bars){
+      for(const a of stockAssets){
+        const bars=normalizeAlpacaBars(data.bars[a.sym]);
+        if(bars&&bars.length>0){allCandles[a.id]=bars;loaded++;}
       }
     }
-    if(candles&&candles.length>0){
-      allCandles[a.id]=candles;
-      loaded++;
+  }
+
+  if(cryptoAssets.length>0){
+    status.textContent='Fetching crypto data...';
+    progress.style.width='25%';
+    const syms=cryptoAssets.map(a=>a.alpacaSym).join(',');
+    const data=await alpacaFetch('/v1beta3/crypto/us/bars',{symbols:syms,timeframe,start,end,limit:10000});
+    if(data&&data.bars){
+      for(const a of cryptoAssets){
+        const bars=normalizeAlpacaBars(data.bars[a.alpacaSym]);
+        if(bars&&bars.length>0){allCandles[a.id]=bars;loaded++;}
+      }
     }
   }
-  status.textContent=`Loaded ${loaded}/${total} assets`;
+
+  status.textContent=`Loaded ${loaded}/${assets.length} assets`;
+  progress.style.width='40%';
   return allCandles;
 }
 
@@ -518,6 +516,9 @@ async function runBacktest(){
   document.getElementById('resultsGrid').style.display='none';
   updateBrainStatus();
 
+  // Snapshot brain state so the simulation doesn't pollute it across runs
+  const brainSnapshot=JSON.parse(JSON.stringify(brain));
+
   const dateStr=document.getElementById('btDate').value;
   const resolution=document.getElementById('resolution').value;
   const riskKey=document.getElementById('riskLevel').value;
@@ -526,14 +527,11 @@ async function runBacktest(){
 
   if(!dateStr){alert('Please select a date');btn.disabled=false;btn.textContent='Run Backtest';return;}
 
-  // Check for stock API key
-  const wantsStocks=(assetMode==='stocks'||assetMode==='all');
-  if(wantsStocks&&!getTDKey()){
-    const ok=confirm('Stock data requires a free Twelve Data API key.\n\n1. Go to twelvedata.com/pricing\n2. Click "Get your Free API key" (no credit card)\n3. Paste the key in the "Twelve Data Key" field\n\nClick OK to continue with crypto only, or Cancel to set your key first.');
-    if(!ok){btn.disabled=false;btn.textContent='Run Backtest';return;}
-    assetMode='crypto'; // Fall back to crypto only
+  // Check for Alpaca API keys
+  if(!getAlpacaKey()||!getAlpacaSecret()){
+    alert('Alpaca API keys required.\n\nPaste your Key and Secret in the fields above.\nSign up free at app.alpaca.markets/signup');
+    btn.disabled=false;btn.textContent='Run Backtest';return;
   }
-  stockFetchWarned=false;
 
   // Select assets
   let assets=[];
@@ -545,9 +543,7 @@ async function runBacktest(){
   const allCandles=await fetchAllData(dateStr,resolution,assets);
   const loadedAssets=assets.filter(a=>allCandles[a.id]);
   if(loadedAssets.length===0){
-    const msg=wantsStocks&&!getTDKey()?
-      'No data loaded. For stocks, you need a free Twelve Data API key (twelvedata.com/pricing).':
-      'No data available for '+dateStr+'. Markets may have been closed.';
+    const msg='No data available for '+dateStr+'. Markets may have been closed, or check your API key and browser console for errors.';
     alert(msg);
     btn.disabled=false;btn.textContent='Run Backtest';return;
   }
@@ -856,6 +852,9 @@ async function runBacktest(){
   const worstTrade=tradeLog.filter(t=>t.type==='SELL').reduce((worst,t)=>t.pnl<worst?t.pnl:worst,Infinity);
   const profitFactor=losses>0&&avgLoss!==0?Math.abs(wins*avgWin/(losses*avgLoss)):0;
 
+  // Restore brain to pre-simulation state so runs are independent
+  Object.assign(brain, brainSnapshot);
+
   // Render results
   renderResults({
     finalValue,totalPnl,totalReturn,totalTrades,wins,losses,winRate,
@@ -991,11 +990,12 @@ function fmtQty(q){
 // =============================================================================
 // INIT
 // =============================================================================
-function saveTDKey(){
-  const v=document.getElementById('tdKey').value.trim();
-  tdKeyCustom=v;
-  if(v)localStorage.setItem('czwm_td_key',v);
-  else localStorage.removeItem('czwm_td_key');
+function saveAlpacaKeys(){
+  const k=document.getElementById('alpacaKeyInput').value.trim();
+  const s=document.getElementById('alpacaSecretInput').value.trim();
+  alpacaKey=k;alpacaSecret=s;
+  if(k)localStorage.setItem('czwm_alpaca_key',k);else localStorage.removeItem('czwm_alpaca_key');
+  if(s)localStorage.setItem('czwm_alpaca_secret',s);else localStorage.removeItem('czwm_alpaca_secret');
 }
 
 // Default date to last weekday
@@ -1005,9 +1005,11 @@ function saveTDKey(){
   now.setDate(now.getDate()-1);
   while(now.getDay()===0||now.getDay()===6)now.setDate(now.getDate()-1);
   document.getElementById('btDate').value=now.toISOString().slice(0,10);
-  // Restore saved TD key
-  const saved=localStorage.getItem('czwm_td_key');
-  if(saved)document.getElementById('tdKey').value=saved;
+  // Restore saved Alpaca keys
+  const savedKey=localStorage.getItem('czwm_alpaca_key');
+  const savedSecret=localStorage.getItem('czwm_alpaca_secret');
+  if(savedKey)document.getElementById('alpacaKeyInput').value=savedKey;
+  if(savedSecret)document.getElementById('alpacaSecretInput').value=savedSecret;
   updateBrainStatus();
 })();
 

@@ -4,9 +4,10 @@
 
 This repository contains three trading systems:
 
-1. **Paper Trading Terminal (v6)** — A real-time paper trading simulator with adaptive ML brain, GARCH volatility, Kelly sizing, and circuit breakers (`paper-trader-v4.html`)
-2. **Quantitative Engine** — An institutional-grade backtesting engine with a web dashboard (`quant-engine/`)
-3. **Polymarket Backtester** — Reality arbitrage and spread arb backtesting for prediction markets (`C:\Users\yarden\polymarket-bot\`)
+1. **Paper Trading Terminal (v6)** — A real-time paper trading simulator powered by Alpaca Markets, with adaptive ML brain, GARCH volatility, Kelly sizing, and circuit breakers (`paper-trader-v4.html`)
+2. **Daily Strategy Backtester** — Intraday backtester using Alpaca historical bars to test all 8 strategies against real price data (`daily-backtester.html`)
+3. **Quantitative Engine** — An institutional-grade backtesting engine with a web dashboard (`quant-engine/`)
+4. **Polymarket Backtester** — Reality arbitrage and spread arb backtesting for prediction markets (`C:\Users\yarden\polymarket-bot\`)
 
 The quant engine powers the analytical backend. It downloads real market data, runs six alpha models simultaneously, constructs optimized portfolios, enforces risk limits, and simulates execution with realistic transaction costs. Results are displayed in a live web dashboard styled to match the paper trading terminal.
 
@@ -16,7 +17,11 @@ The quant engine powers the analytical backend. It downloads real market data, r
 
 ### Paper Trading Terminal
 ```
-Open paper-trader-v4.html in any browser
+1. Sign up for a free Alpaca paper trading account at https://app.alpaca.markets/signup
+2. Get your API Key ID and Secret Key from the Alpaca dashboard
+3. Open paper-trader-v4.html in any browser
+4. The bot will prompt for Alpaca credentials (stored in localStorage for future sessions)
+5. Press START — prices stream via WebSocket, trades execute in Alpaca paper trading
 ```
 
 ### Quantitative Engine Dashboard
@@ -164,7 +169,7 @@ The paper trading terminal automatically switches to **crypto-only mode** when t
 ### How It Works
 
 - **During market hours (9:30 AM – 4:00 PM ET, Mon–Fri)** — The terminal trades all assets: stocks, ETFs, and crypto. Business as usual.
-- **Outside market hours** — The terminal trades only crypto assets using live prices from the Binance public API. The status bar shows "24/7 Crypto Mode" so you always know what's happening.
+- **Outside market hours** — The terminal trades only crypto assets using live prices from Alpaca's crypto WebSocket stream. The status bar shows "24/7 Crypto Mode" so you always know what's happening.
 
 ### What Changes in Crypto Mode
 
@@ -181,7 +186,7 @@ The paper trading terminal automatically switches to **crypto-only mode** when t
 BTC, ETH, SOL, ADA, AVAX, DOT, LINK — large-cap crypto
 XRP, DOGE, POL, SUI, PEPE, NEAR, LTC — mid-cap and meme coins
 
-All prices are fetched live from the Binance public API (`api.binance.com`). The quant engine also includes BTC-USD, ETH-USD, and SOL-USD in its backtest universe via Yahoo Finance.
+All prices are streamed live from Alpaca Markets via WebSocket (`wss://stream.data.alpaca.markets/v1beta3/us`). The quant engine also includes BTC-USD, ETH-USD, and SOL-USD in its backtest universe via Yahoo Finance.
 
 ### Why This Matters
 
@@ -193,7 +198,9 @@ Most retail trading tools go dark when the stock market closes. But crypto trade
 
 ```
 trading-bot/
-├── paper-trader-v4.html          # Real-time paper trading terminal
+├── paper-trader-v4.html          # Real-time paper trading terminal (Alpaca WebSocket + execution)
+├── daily-backtester.html         # Intraday strategy backtester (Alpaca historical bars)
+├── CLAUDE.md                     # Alpaca API credentials (not committed)
 ├── README.md                     # This file
 └── quant-engine/
     ├── server.py                 # Flask web server (API backend)
@@ -651,7 +658,7 @@ These can all be adjusted from the web dashboard's Configure panel before runnin
 **New file: `daily-backtester.html`** — Standalone intraday backtester matching the paper-trader's theme.
 
 **Features:**
-- Fetches real intraday candles: stocks via Finnhub, crypto via Binance US (with .com fallback)
+- Fetches real intraday candles via Alpaca Markets API (stocks + crypto in batch requests)
 - Replays a full day tick-by-tick through all 8 strategies (RSI, MA, Momentum, MeanRev, VWAP, Composite, Stochastic, Bollinger)
 - Imports brain from quant-engine export or native brain file (same import logic as paper-trader)
 - All paper-trader systems: ATR-based stops, Kelly sizing, circuit breakers, cross-strategy sell protection, brain weights, regime adjustments
@@ -662,9 +669,36 @@ These can all be adjusted from the web dashboard's Configure panel before runnin
 
 **Usage:**
 1. Open `daily-backtester.html` in any browser (works as file://)
-2. Optionally import a brain file (from QE or paper-trader export)
-3. Select a date, resolution, risk level, and starting capital
-4. Click "Run Backtest" — fetches data and simulates the full day
-5. Review equity curve, trade log, and strategy performance
+2. Enter your Alpaca API Key and Secret (free paper trading account at [alpaca.markets](https://app.alpaca.markets/signup))
+3. Optionally import a brain file (from QE or paper-trader export)
+4. Select a date, resolution, risk level, and starting capital
+5. Click "Run Backtest" — fetches data and simulates the full day
+6. Review equity curve, trade log, and strategy performance
 
-**Data sources:** Twelve Data (stocks, free API key needed — [twelvedata.com/pricing](https://twelvedata.com/pricing), 800 calls/day) + Binance US/Binance (crypto, no auth needed). Finnhub free tier doesn't support historical candles, so Twelve Data is used instead.
+**Data sources:** Alpaca Markets API (free paper trading account). Stock bars: `GET /v2/stocks/bars`, Crypto bars: `GET /v1beta3/crypto/us/bars`. Auth via `APCA-API-KEY-ID` / `APCA-API-SECRET-KEY` headers. Multi-symbol batch requests for fast loading.
+
+### v6.6–6.7 — Alpaca Markets Integration (2026-03-11)
+**Problem:** Unusual Whales API was the data source but user wanted to switch to Alpaca Markets for both real-time data AND trade execution (paper trading).
+
+**What changed:**
+- **`paper-trader-v4.html`**:
+  - Removed ALL Binance US, CoinGecko, and Finnhub API calls
+  - Added Alpaca WebSocket streaming for real-time prices (stocks via `wss://stream.data.alpaca.markets/v2/iex`, crypto via `wss://stream.data.alpaca.markets/v1beta3/us`)
+  - Added REST fallback (`/v2/stocks/trades/latest`, `/v1beta3/crypto/us/latest/trades`) when WebSocket is down
+  - Added Alpaca paper trade execution (`POST /v2/orders` to `paper-api.alpaca.markets`) — opt-in via `alpacaExecEnabled` flag
+  - Crypto assets now use `alpacaSym` (e.g., `BTC/USD`) instead of Binance's `BTCUSDT`
+  - API keys stored in localStorage as `czwm_alpaca_key` / `czwm_alpaca_secret`
+  - WebSocket auto-reconnects with exponential backoff
+  - Status dots now show "Crypto (Alpaca)" and "Stocks (Alpaca)"
+- **`daily-backtester.html`**:
+  - Removed ALL Unusual Whales API calls (`uwFetch`, `normalizeUWCandles`, etc.)
+  - Added Alpaca historical bars API (multi-symbol batch requests — much faster than sequential UW calls)
+  - Stock bars: `GET /v2/stocks/bars?symbols=...&timeframe=5Min&start=...&end=...`
+  - Crypto bars: `GET /v1beta3/crypto/us/bars?symbols=...&timeframe=...&start=...&end=...`
+  - UI: two input fields (Alpaca Key + Secret) replace single UW key field
+  - `normalizeAlpacaBars()` adapter replaces `normalizeUWCandles()`
+- **Core trading algorithm**: UNTOUCHED — all 8 strategies, brain, Kelly sizing, GARCH, circuit breaker, ATR-based stops remain identical
+- **Options engine**: Still uses self-contained Black-Scholes math (no external data needed)
+  - TODO: Options flow / dark pool signals were never sourced from UW anyway (all synthetic). If an external options data source is added later, wire it into the `evaluate()` options signals section (lines ~1174-1230)
+
+**Result:** Single data provider (Alpaca) for stocks + crypto, with optional paper trade execution. WebSocket provides sub-second price updates vs. the old 6s polling.

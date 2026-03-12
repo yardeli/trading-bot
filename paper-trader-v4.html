@@ -208,8 +208,8 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
     </div>
   </div>
   <div class="hdr-status">
-    <span><span class="dot" id="dotCrypto" style="background:var(--text3)"></span> Crypto API</span>
-    <span><span class="dot" id="dotStocks" style="background:var(--text3)"></span> Stocks</span>
+    <span><span class="dot" id="dotCrypto" style="background:var(--text3)"></span> Crypto (Alpaca)</span>
+    <span><span class="dot" id="dotStocks" style="background:var(--text3)"></span> Stocks (Alpaca)</span>
     <span id="marketStatus" style="color:var(--text3);font-size:10px">&#9679; Market Closed</span>
     <span><span class="dot" id="dotOptions" style="background:var(--text3)"></span> Options Engine</span>
     <span id="lastUpdate">Waiting for data...</span>
@@ -313,20 +313,20 @@ table.tlog{width:100%;border-collapse:collapse;font-size:10px}
 // ASSETS
 // =============================================================================
 const CRYPTO = [
-  {id:'bitcoin',sym:'BTC',name:'Bitcoin',type:'crypto',bn:'BTCUSDT'},
-  {id:'ethereum',sym:'ETH',name:'Ethereum',type:'crypto',bn:'ETHUSDT'},
-  {id:'solana',sym:'SOL',name:'Solana',type:'crypto',bn:'SOLUSDT'},
-  {id:'cardano',sym:'ADA',name:'Cardano',type:'crypto',bn:'ADAUSDT'},
-  {id:'avalanche-2',sym:'AVAX',name:'Avalanche',type:'crypto',bn:'AVAXUSDT'},
-  {id:'chainlink',sym:'LINK',name:'Chainlink',type:'crypto',bn:'LINKUSDT'},
-  {id:'polkadot',sym:'DOT',name:'Polkadot',type:'crypto',bn:'DOTUSDT'},
-  {id:'ripple',sym:'XRP',name:'Ripple',type:'crypto',bn:'XRPUSDT'},
-  {id:'dogecoin',sym:'DOGE',name:'Dogecoin',type:'crypto',bn:'DOGEUSDT'},
-  {id:'polygon',sym:'POL',name:'Polygon',type:'crypto',bn:'POLUSDT'},
-  {id:'sui',sym:'SUI',name:'Sui',type:'crypto',bn:'SUIUSDT'},
-  {id:'pepe',sym:'PEPE',name:'Pepe',type:'crypto',bn:'PEPEUSDT'},
-  {id:'near',sym:'NEAR',name:'NEAR',type:'crypto',bn:'NEARUSDT'},
-  {id:'litecoin',sym:'LTC',name:'Litecoin',type:'crypto',bn:'LTCUSDT'},
+  {id:'BTC',sym:'BTC',name:'Bitcoin',type:'crypto',alpacaSym:'BTC/USD'},
+  {id:'ETH',sym:'ETH',name:'Ethereum',type:'crypto',alpacaSym:'ETH/USD'},
+  {id:'SOL',sym:'SOL',name:'Solana',type:'crypto',alpacaSym:'SOL/USD'},
+  {id:'ADA',sym:'ADA',name:'Cardano',type:'crypto',alpacaSym:'ADA/USD'},
+  {id:'AVAX',sym:'AVAX',name:'Avalanche',type:'crypto',alpacaSym:'AVAX/USD'},
+  {id:'LINK',sym:'LINK',name:'Chainlink',type:'crypto',alpacaSym:'LINK/USD'},
+  {id:'DOT',sym:'DOT',name:'Polkadot',type:'crypto',alpacaSym:'DOT/USD'},
+  {id:'XRP',sym:'XRP',name:'Ripple',type:'crypto',alpacaSym:'XRP/USD'},
+  {id:'DOGE',sym:'DOGE',name:'Dogecoin',type:'crypto',alpacaSym:'DOGE/USD'},
+  {id:'POL',sym:'POL',name:'Polygon',type:'crypto',alpacaSym:'POL/USD'},
+  {id:'SUI',sym:'SUI',name:'Sui',type:'crypto',alpacaSym:'SUI/USD'},
+  {id:'PEPE',sym:'PEPE',name:'Pepe',type:'crypto',alpacaSym:'PEPE/USD'},
+  {id:'NEAR',sym:'NEAR',name:'NEAR',type:'crypto',alpacaSym:'NEAR/USD'},
+  {id:'LTC',sym:'LTC',name:'Litecoin',type:'crypto',alpacaSym:'LTC/USD'},
 ];
 const STOCKS = [
   {id:'AAPL',sym:'AAPL',name:'Apple',type:'stock'},
@@ -821,65 +821,200 @@ function impliedVol(prices){
 }
 
 // =============================================================================
-// PRICE FETCHING
+// ALPACA API CONFIG
 // =============================================================================
-// Track session-start prices for 24h-style % change display
-let cryptoStartPrices={};
+const ALPACA_DATA_URL='https://data.alpaca.markets';
+const ALPACA_TRADE_URL='https://paper-api.alpaca.markets';
+const ALPACA_WS_STOCKS='wss://stream.data.alpaca.markets/v2/iex';
+const ALPACA_WS_CRYPTO='wss://stream.data.alpaca.markets/v1beta3/us';
 
-async function fetchCrypto(){
-  // Try Binance US first (works in US), then CoinGecko as fallback
-  const ok=await _fetchBinance();
-  if(!ok) await _fetchCoinGecko();
-}
+let alpacaKey=localStorage.getItem('czwm_alpaca_key')||'';
+let alpacaSecret=localStorage.getItem('czwm_alpaca_secret')||'';
+let alpacaExecEnabled=false; // opt-in: also submit orders to Alpaca paper trading
 
-async function _fetchBinance(){
+function getAlpacaKey(){return alpacaKey;}
+function getAlpacaSecret(){return alpacaSecret;}
+
+// =============================================================================
+// ALPACA REST HELPERS
+// =============================================================================
+async function alpacaFetch(baseUrl,endpoint,params){
+  const key=getAlpacaKey(),secret=getAlpacaSecret();
+  if(!key||!secret)return null;
+  const url=new URL(endpoint,baseUrl);
+  if(params){for(const[k,v] of Object.entries(params)){if(v===undefined||v===null||v==='')continue;url.searchParams.append(k,String(v));}}
   try{
-    const symbols=CRYPTO.map(a=>a.bn);
-    const query=encodeURIComponent(JSON.stringify(symbols));
-    // Use Binance US — api.binance.com returns 451 in the US
-    const r=await fetch(`https://api.binance.us/api/v3/ticker/price?symbols=${query}`,{signal:AbortSignal.timeout(5000)});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    const lookup={};
-    for(const item of data) lookup[item.symbol]=parseFloat(item.price);
-    _applyCryptoPrices(lookup);
-    return true;
-  }catch(e){
-    console.warn('Binance US fetch failed:',e.message);
-    return false;
-  }
+    const r=await fetch(url.toString(),{
+      method:'GET',
+      headers:{'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret,'Accept':'application/json'},
+      signal:AbortSignal.timeout(10000)
+    });
+    if(!r.ok){console.warn(`Alpaca ${endpoint}: HTTP ${r.status}`);return null;}
+    return await r.json();
+  }catch(e){console.warn(`Alpaca ${endpoint}:`,e.message);return null;}
 }
 
-async function _fetchCoinGecko(){
+async function alpacaPost(baseUrl,endpoint,body){
+  const key=getAlpacaKey(),secret=getAlpacaSecret();
+  if(!key||!secret)return null;
+  const url=new URL(endpoint,baseUrl);
   try{
-    const ids=CRYPTO.map(a=>a.id).join(',');
-    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,{signal:AbortSignal.timeout(5000)});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    const lookup={};
-    for(const a of CRYPTO){if(data[a.id]&&data[a.id].usd) lookup[a.bn]=data[a.id].usd;}
-    _applyCryptoPrices(lookup);
-    return true;
-  }catch(e){
-    console.warn('CoinGecko fetch failed:',e.message);
-    apiErr++;setDot('dotCrypto',false);
-    return false;
-  }
+    const r=await fetch(url.toString(),{
+      method:'POST',
+      headers:{'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret,'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+      signal:AbortSignal.timeout(10000)
+    });
+    if(!r.ok){const t=await r.text().catch(()=>'');console.warn(`Alpaca POST ${endpoint}: HTTP ${r.status} ${t.slice(0,200)}`);return null;}
+    return await r.json();
+  }catch(e){console.warn(`Alpaca POST ${endpoint}:`,e.message);return null;}
 }
 
-function _applyCryptoPrices(lookup){
+// =============================================================================
+// ALPACA WEBSOCKET STREAMING
+// =============================================================================
+let stockWs=null, cryptoWs=null, stockWsOk=false, cryptoWsOk=false;
+let stockReconnectTimer=null, cryptoReconnectTimer=null;
+let stockReconnectDelay=1000, cryptoReconnectDelay=1000;
+let sessionStartPrices={};
+
+function _applyPrice(assetId,price){
+  if(!price||price<=0)return;
+  lastPrices[assetId]=curPrices[assetId]||price;
+  curPrices[assetId]=price;
+  if(!sessionStartPrices[assetId])sessionStartPrices[assetId]=price;
+  priceChg[assetId]=((price-sessionStartPrices[assetId])/sessionStartPrices[assetId])*100;
+  if(!priceHistory[assetId])priceHistory[assetId]=[];
+  priceHistory[assetId].push(price);
+  if(priceHistory[assetId].length>300)priceHistory[assetId].shift();
+}
+
+function connectStockStream(){
+  if(!getAlpacaKey()||!getAlpacaSecret())return;
+  if(stockWs&&(stockWs.readyState===WebSocket.OPEN||stockWs.readyState===WebSocket.CONNECTING))return;
+  try{
+    stockWs=new WebSocket(ALPACA_WS_STOCKS);
+  }catch(e){console.warn('Stock WS connect failed:',e.message);return;}
+  stockWs.onopen=()=>{console.log('Stock WS connected');};
+  stockWs.onmessage=(ev)=>{
+    try{
+      const msgs=JSON.parse(ev.data);
+      for(const msg of msgs){
+        if(msg.T==='success'&&msg.msg==='connected'){
+          stockWs.send(JSON.stringify({action:'auth',key:getAlpacaKey(),secret:getAlpacaSecret()}));
+        }
+        else if(msg.T==='success'&&msg.msg==='authenticated'){
+          console.log('Stock WS authenticated');
+          const syms=STOCKS.map(a=>a.sym);
+          stockWs.send(JSON.stringify({action:'subscribe',trades:syms,bars:syms}));
+          stockWsOk=true;stockReconnectDelay=1000;setDot('dotStocks',true);
+        }
+        else if(msg.T==='t'){
+          // Trade update: {T:'t',S:'AAPL',p:150.25,...}
+          const asset=STOCKS.find(a=>a.sym===msg.S);
+          if(asset)_applyPrice(asset.id,msg.p);
+        }
+        else if(msg.T==='b'){
+          // Bar update: {T:'b',S:'AAPL',c:150.25,...}
+          const asset=STOCKS.find(a=>a.sym===msg.S);
+          if(asset)_applyPrice(asset.id,msg.c);
+        }
+        else if(msg.T==='error'){console.warn('Stock WS error:',msg.msg,msg.code);}
+      }
+    }catch(e){console.warn('Stock WS parse error:',e.message);}
+  };
+  stockWs.onclose=()=>{
+    stockWsOk=false;setDot('dotStocks',false);
+    console.log(`Stock WS closed, reconnecting in ${stockReconnectDelay}ms`);
+    clearTimeout(stockReconnectTimer);
+    stockReconnectTimer=setTimeout(()=>{stockReconnectDelay=Math.min(stockReconnectDelay*2,30000);connectStockStream();},stockReconnectDelay);
+  };
+  stockWs.onerror=(e)=>{console.warn('Stock WS error');stockWs.close();};
+}
+
+function connectCryptoStream(){
+  if(!getAlpacaKey()||!getAlpacaSecret())return;
+  if(cryptoWs&&(cryptoWs.readyState===WebSocket.OPEN||cryptoWs.readyState===WebSocket.CONNECTING))return;
+  try{
+    cryptoWs=new WebSocket(ALPACA_WS_CRYPTO);
+  }catch(e){console.warn('Crypto WS connect failed:',e.message);return;}
+  cryptoWs.onopen=()=>{console.log('Crypto WS connected');};
+  cryptoWs.onmessage=(ev)=>{
+    try{
+      const msgs=JSON.parse(ev.data);
+      for(const msg of msgs){
+        if(msg.T==='success'&&msg.msg==='connected'){
+          cryptoWs.send(JSON.stringify({action:'auth',key:getAlpacaKey(),secret:getAlpacaSecret()}));
+        }
+        else if(msg.T==='success'&&msg.msg==='authenticated'){
+          console.log('Crypto WS authenticated');
+          const syms=CRYPTO.map(a=>a.alpacaSym);
+          cryptoWs.send(JSON.stringify({action:'subscribe',trades:syms,bars:syms}));
+          cryptoWsOk=true;cryptoReconnectDelay=1000;setDot('dotCrypto',true);
+        }
+        else if(msg.T==='t'){
+          // Crypto trade: {T:'t',S:'BTC/USD',p:60000,...}
+          const asset=CRYPTO.find(a=>a.alpacaSym===msg.S);
+          if(asset)_applyPrice(asset.id,msg.p);
+        }
+        else if(msg.T==='b'){
+          // Crypto bar: {T:'b',S:'BTC/USD',c:60000,...}
+          const asset=CRYPTO.find(a=>a.alpacaSym===msg.S);
+          if(asset)_applyPrice(asset.id,msg.c);
+        }
+        else if(msg.T==='error'){console.warn('Crypto WS error:',msg.msg,msg.code);}
+      }
+    }catch(e){console.warn('Crypto WS parse error:',e.message);}
+  };
+  cryptoWs.onclose=()=>{
+    cryptoWsOk=false;setDot('dotCrypto',false);
+    console.log(`Crypto WS closed, reconnecting in ${cryptoReconnectDelay}ms`);
+    clearTimeout(cryptoReconnectTimer);
+    cryptoReconnectTimer=setTimeout(()=>{cryptoReconnectDelay=Math.min(cryptoReconnectDelay*2,30000);connectCryptoStream();},cryptoReconnectDelay);
+  };
+  cryptoWs.onerror=(e)=>{console.warn('Crypto WS error');cryptoWs.close();};
+}
+
+// REST fallback — fetch latest prices when WebSocket is down
+async function fetchStockPricesREST(){
+  if(stockWsOk)return; // WS is live, no need
+  updateMarketStatus();
+  const syms=STOCKS.map(a=>a.sym).join(',');
+  const data=await alpacaFetch(ALPACA_DATA_URL,'/v2/stocks/trades/latest',{symbols:syms,feed:'iex'});
+  if(!data||!data.trades)return;
+  let ok=0;
+  for(const a of STOCKS){
+    const trade=data.trades[a.sym];
+    if(trade&&trade.p){_applyPrice(a.id,trade.p);ok++;}
+  }
+  if(ok>0)setDot('dotStocks',true);
+}
+
+async function fetchCryptoPricesREST(){
+  if(cryptoWsOk)return; // WS is live, no need
+  const syms=CRYPTO.map(a=>a.alpacaSym).join(',');
+  const data=await alpacaFetch(ALPACA_DATA_URL,'/v1beta3/crypto/us/latest/trades',{symbols:syms});
+  if(!data||!data.trades)return;
+  let ok=0;
   for(const a of CRYPTO){
-    const p=lookup[a.bn];
-    if(!p)continue;
-    lastPrices[a.id]=curPrices[a.id]||p;
-    curPrices[a.id]=p;
-    if(!cryptoStartPrices[a.id])cryptoStartPrices[a.id]=p;
-    priceChg[a.id]=((p-cryptoStartPrices[a.id])/cryptoStartPrices[a.id])*100;
-    if(!priceHistory[a.id])priceHistory[a.id]=[];
-    priceHistory[a.id].push(p);
-    if(priceHistory[a.id].length>300)priceHistory[a.id].shift();
+    const trade=data.trades[a.alpacaSym];
+    if(trade&&trade.p){_applyPrice(a.id,trade.p);ok++;}
   }
-  apiErr=0;setDot('dotCrypto',true);
+  if(ok>0)setDot('dotCrypto',true);
+}
+
+// =============================================================================
+// ALPACA TRADE EXECUTION (Paper Trading — opt-in)
+// =============================================================================
+async function alpacaSubmitOrder(symbol,qty,side){
+  if(!alpacaExecEnabled)return;
+  if(!getAlpacaKey()||!getAlpacaSecret()){console.warn('Alpaca keys not set, skipping order');return;}
+  // For crypto, Alpaca expects the slash format (BTC/USD)
+  const isCrypto=CRYPTO.some(a=>a.id===symbol||a.alpacaSym===symbol);
+  const orderSym=isCrypto?(CRYPTO.find(a=>a.id===symbol)?.alpacaSym||symbol):symbol;
+  const body={symbol:orderSym,qty:String(qty),side,type:'market',time_in_force:isCrypto?'gtc':'day'};
+  const result=await alpacaPost(ALPACA_TRADE_URL,'/v2/orders',body);
+  if(result){console.log(`Alpaca order submitted: ${side} ${qty} ${orderSym}`,result);}
 }
 
 // ── Market hours (US Eastern) ────────────────────────────────────────────
@@ -909,46 +1044,7 @@ function updateMarketStatus(){
   }
 }
 
-// ── Real stock prices via Finnhub ────────────────────────────────────
-const FINNHUB_KEY='d6o8de1r01qu09cih710d6o8de1r01qu09cih71g';
-let lastStockFetch=0, stockApiOk=false;
-
-async function fetchStocks(){
-  updateMarketStatus();
-  const now=Date.now();
-  if(now-lastStockFetch<8000) return;
-  lastStockFetch=now;
-
-  // Always fetch stock prices (even outside market hours for display)
-  // Finnhub returns last close price outside hours
-  try{
-    const results=await Promise.allSettled(STOCKS.map(async a=>{
-      const url=`https://finnhub.io/api/v1/quote?symbol=${a.sym}&token=${FINNHUB_KEY}`;
-      const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
-      if(!r.ok){console.warn(`Finnhub ${a.sym}: HTTP ${r.status}`);return null;}
-      const d=await r.json();
-      if(!d.c||d.c===0){console.warn(`Finnhub ${a.sym}: no price data`,d);return null;}
-      return{id:a.id,price:d.c,prevClose:d.pc};
-    }));
-    let ok=0;
-    for(const r of results){
-      if(r.status!=='fulfilled'||!r.value) continue;
-      const{id,price,prevClose}=r.value;
-      lastPrices[id]=curPrices[id]||price;
-      curPrices[id]=price;
-      priceChg[id]=prevClose?((price-prevClose)/prevClose)*100:0;
-      if(!priceHistory[id])priceHistory[id]=[];
-      priceHistory[id].push(price);
-      if(priceHistory[id].length>300)priceHistory[id].shift();
-      ok++;
-    }
-    if(ok>0){stockApiOk=true;setDot('dotStocks',true);console.log(`Stocks: ${ok}/${STOCKS.length} prices loaded`);return;}
-    else{console.warn('Finnhub: all requests returned no data');}
-  }catch(e){console.warn('Finnhub fetch failed:',e.message);}
-
-  stockApiOk=false;
-  setDot('dotStocks',false);
-}
+let lastRESTFetch=0;
 
 // =============================================================================
 // INDICATORS
@@ -1388,12 +1484,16 @@ function buy(id,sym,amount,strat,reason){
   const qty=amount/price;cash-=amount;
   positions.push({id:++tidCtr,asset:id,sym,qty,entryPrice:price,highPrice:price,strategy:strat,time:new Date(),isOption:false,entryTick:tickCount});
   tradeLog.unshift({id:tidCtr,type:'BUY',asset:id,sym,price,qty,value:amount,pnl:null,strategy:strat,reason,time:new Date()});
+  // Submit to Alpaca paper trading if enabled
+  alpacaSubmitOrder(id,qty,'buy');
 }
 
 function sell(pos,price,strat,reason){
   const value=pos.qty*price;const cost=pos.qty*pos.entryPrice;const pnl=value-cost;
   cash+=value;positions=positions.filter(p=>p.id!==pos.id);
   recordSell(pos,price,pnl,strat,reason);
+  // Submit to Alpaca paper trading if enabled
+  if(!pos.isOption)alpacaSubmitOrder(pos.asset,pos.qty,'sell');
 }
 
 function recordSell(pos,price,pnl,strat,reason){
@@ -1642,7 +1742,13 @@ function renderAll(){renderTicker();renderPortfolio();renderPositions();renderLo
 // CONTROL
 // =============================================================================
 async function tick(){
-  await Promise.all([fetchCrypto(),fetchStocks()]);
+  // WebSocket pushes prices automatically; REST fallback if WS is down
+  const now=Date.now();
+  if(now-lastRESTFetch>10000){
+    lastRESTFetch=now;
+    await Promise.all([fetchStockPricesREST(),fetchCryptoPricesREST()]);
+  }
+  updateMarketStatus();
   if(running)evaluate();
   renderAll();
   document.getElementById('lastUpdate').textContent='Updated '+fmtT(new Date());
@@ -1651,8 +1757,14 @@ async function tick(){
 function toggleBot(){
   running=!running;
   const btn=document.getElementById('toggleBtn'),badge=document.getElementById('statusBadge');
-  if(running){btn.innerHTML='&#9646;&#9646; PAUSE';btn.className='btn btn-stop';badge.textContent='RUNNING';badge.className='badge badge-run';startLoop();}
-  else{btn.innerHTML='&#9654; START';btn.className='btn btn-go';badge.textContent='PAUSED';badge.className='badge badge-pause';stopLoop();}
+  if(running){
+    btn.innerHTML='&#9646;&#9646; PAUSE';btn.className='btn btn-stop';badge.textContent='RUNNING';badge.className='badge badge-run';
+    // Connect Alpaca WebSockets for real-time data
+    connectStockStream();connectCryptoStream();
+    startLoop();
+  }else{
+    btn.innerHTML='&#9654; START';btn.className='btn btn-go';badge.textContent='PAUSED';badge.className='badge badge-pause';stopLoop();
+  }
 }
 function startLoop(){stopLoop();tick();timer=setInterval(tick,parseInt(document.getElementById('refreshRate').value))}
 function stopLoop(){if(timer){clearInterval(timer);timer=null}}
@@ -1661,15 +1773,15 @@ function resetBot(){
   running=false;stopLoop();
   cash=STARTING;positions=[];tradeLog=[];priceHistory={};curPrices={};lastPrices={};priceChg={};
   portHistory=[{time:new Date(),value:STARTING}];
-  tidCtr=0;apiErr=0;peak=STARTING;maxDD=0;bestTr=0;tickCount=0;cryptoStartPrices={};garchState={};circuitBreakerState='normal';
-  lastStockFetch=0;stockApiOk=false;
+  tidCtr=0;apiErr=0;peak=STARTING;maxDD=0;bestTr=0;tickCount=0;sessionStartPrices={};garchState={};circuitBreakerState='normal';
+  lastRESTFetch=0;
   STRAT_KEYS.forEach(s=>stats[s]={trades:0,wins:0,pnl:0});
   chart.data.labels=[fmtT(new Date())];chart.data.datasets[0].data=[STARTING];chart.update();
   document.getElementById('toggleBtn').innerHTML='&#9654; START';
   document.getElementById('toggleBtn').className='btn btn-go';
   document.getElementById('statusBadge').textContent='PAUSED';
   document.getElementById('statusBadge').className='badge badge-pause';
-  fetchStocks();renderAll();
+  fetchStockPricesREST();fetchCryptoPricesREST();renderAll();
 }
 document.getElementById('refreshRate').addEventListener('change',()=>{if(running)startLoop()});
 
@@ -1699,7 +1811,13 @@ const chart=new Chart(ctx,{type:'line',data:{labels:[fmtT(new Date())],datasets:
 // INIT
 // =============================================================================
 loadBrain();
-(async function(){renderAll();await Promise.all([fetchCrypto(),fetchStocks()]);renderAll()})();
+// Connect WebSockets and do initial REST fetch for prices
+(async function(){
+  renderAll();
+  connectStockStream();connectCryptoStream();
+  await Promise.all([fetchStockPricesREST(),fetchCryptoPricesREST()]);
+  renderAll();
+})();
 </script>
 </body>
 </html>

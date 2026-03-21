@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: quant-trading-dashboard
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn dashboard:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 600
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: ALPACA_KEY
+        sync: false
+      - key: ALPACA_SECRET
+        sync: false

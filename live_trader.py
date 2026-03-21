@@ -28,9 +28,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
-# Add quant engine to path
-QUANT_ENGINE_PATH = os.path.join(os.path.dirname(__file__), "..", "quant-engine-local")
-sys.path.insert(0, os.path.abspath(QUANT_ENGINE_PATH))
+# Quant engine modules are bundled in this repo
 
 from alpha.mean_reversion import OUMeanReversion, PairsTrading
 from alpha.ml_alpha import MLAlpha

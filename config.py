@@ -7,8 +7,7 @@ Regime-Adaptive Crypto Multi-Strategy: Momentum + Mean Reversion
 # ── Assets ──────────────────────────────────────────────────────────
 ASSETS = [
     "BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD",
-    "ADA-USD", "AVAX-USD", "DOT-USD", "LINK-USD", "MATIC-USD",
-    "DOGE-USD", "ATOM-USD", "UNI-USD", "LTC-USD", "NEAR-USD",
+    "ADA-USD", "AVAX-USD", "DOGE-USD", "LINK-USD", "NEAR-USD",
 ]
 BENCHMARK = "BTC-USD"
 

@@ -255,14 +255,21 @@ class WalkForwardBacktester:
                 if isinstance(vol_ratio, (int, float)) and vol_ratio < 0.8:
                     continue
 
-                # Kelly position sizing
+                # Kelly position sizing with inverse volatility scaling
                 drawdown = max(0, (peak_capital - capital) / peak_capital)
                 win_prob = pred_prob if direction == 1 else (1 - pred_prob)
                 kelly_frac = dynamic_kelly(win_prob, 1.0, drawdown)
                 if kelly_frac <= 0:
                     continue
 
-                position_size = capital * kelly_frac
+                # Inverse volatility: scale down positions for high-vol assets
+                asset_vol = row.get("volatility_20d", 0.5)
+                if isinstance(asset_vol, (int, float)) and asset_vol > 0:
+                    vol_scalar = min(1.5, 0.5 / max(asset_vol, 0.1))
+                else:
+                    vol_scalar = 1.0
+
+                position_size = capital * kelly_frac * vol_scalar
                 if position_size < 10:
                     continue
 

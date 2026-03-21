@@ -1,0 +1,102 @@
+{
+  "n_splits": 15,
+  "mean_accuracy": 51.4,
+  "std_accuracy": 1.45,
+  "min_accuracy": 49.0,
+  "max_accuracy": 53.6,
+  "split_results": [
+    {
+      "split": 0,
+      "train_size": 4825,
+      "test_size": 2420,
+      "accuracy": 52.9
+    },
+    {
+      "split": 1,
+      "train_size": 4785,
+      "test_size": 2420,
+      "accuracy": 50.2
+    },
+    {
+      "split": 2,
+      "train_size": 4785,
+      "test_size": 2420,
+      "accuracy": 52.8
+    },
+    {
+      "split": 3,
+      "train_size": 4785,
+      "test_size": 2420,
+      "accuracy": 50.1
+    },
+    {
+      "split": 4,
+      "train_size": 4800,
+      "test_size": 2425,
+      "accuracy": 49.0
+    },
+    {
+      "split": 5,
+      "train_size": 4805,
+      "test_size": 2420,
+      "accuracy": 51.6
+    },
+    {
+      "split": 6,
+      "train_size": 4765,
+      "test_size": 2420,
+      "accuracy": 53.6
+    },
+    {
+      "split": 7,
+      "train_size": 4765,
+      "test_size": 2420,
+      "accuracy": 52.5
+    },
+    {
+      "split": 8,
+      "train_size": 4780,
+      "test_size": 2425,
+      "accuracy": 52.0
+    },
+    {
+      "split": 9,
+      "train_size": 4805,
+      "test_size": 2420,
+      "accuracy": 52.8
+    },
+    {
+      "split": 10,
+      "train_size": 4765,
+      "test_size": 2420,
+      "accuracy": 49.7
+    },
+    {
+      "split": 11,
+      "train_size": 4780,
+      "test_size": 2425,
+      "accuracy": 49.5
+    },
+    {
+      "split": 12,
+      "train_size": 4805,
+      "test_size": 2420,
+      "accuracy": 50.1
+    },
+    {
+      "split": 13,
+      "train_size": 4780,
+      "test_size": 2425,
+      "accuracy": 52.7
+    },
+    {
+      "split": 14,
+      "train_size": 4820,
+      "test_size": 2425,
+      "accuracy": 51.5
+    }
+  ],
+  "elapsed_seconds": 26.3,
+  "timestamp": "2026-03-20T19:14:17.808612",
+  "mode": "cpcv"
+}

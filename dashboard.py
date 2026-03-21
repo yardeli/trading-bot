@@ -85,15 +85,15 @@ _results, _trades, _equity, _folds = run_backtest_with_details()
 
 def _build_html():
     """Build dashboard HTML with all data embedded as JSON."""
-    r = _results
     data_json = json.dumps({
-        "results": r,
+        "results": _results,
         "trades": _trades,
         "equity": _equity,
         "folds": _folds,
     })
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    return f"""<!DOCTYPE html>
+    return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -101,54 +101,54 @@ def _build_html():
 <title>Auto-Trader Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-*{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0e1a;color:#c8d0e0}}
-.header{{background:linear-gradient(135deg,#0f1629,#1a1f3a);padding:20px 30px;
-  border-bottom:1px solid #1e2744;display:flex;justify-content:space-between;align-items:center}}
-.header h1{{font-size:1.5rem;color:#e2e8f0}}
-.header h1 span{{color:#22d3ee}}
-.header .ts{{color:#64748b;font-size:.8rem}}
-.container{{max-width:1400px;margin:0 auto;padding:20px}}
-.sg{{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:22px}}
-.sc{{background:#111827;border:1px solid #1e2744;border-radius:10px;padding:14px;text-align:center}}
-.sc:hover{{border-color:#334155}}
-.sl{{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}}
-.sv{{font-size:1.5rem;font-weight:700}}
-.ss{{font-size:.7rem;color:#64748b;margin-top:3px}}
-.g{{color:#22c55e}}.r{{color:#ef4444}}.b{{color:#3b82f6}}.cy{{color:#22d3ee}}.or{{color:#f97316}}
-.cc{{background:#111827;border:1px solid #1e2744;border-radius:10px;padding:20px;margin-bottom:22px}}
-.cc h2{{font-size:1rem;color:#94a3b8;margin-bottom:12px}}
-.cw{{height:340px;position:relative}}
-.sec{{background:#111827;border:1px solid #1e2744;border-radius:10px;padding:20px;margin-bottom:22px}}
-.sec h2{{font-size:1rem;color:#94a3b8;margin-bottom:12px}}
-.tabs{{display:flex;gap:8px;margin-bottom:14px}}
-.tab{{padding:5px 14px;border-radius:6px;cursor:pointer;font-size:.78rem;
-  background:#1e293b;color:#94a3b8;border:1px solid #334155}}
-.tab.active{{background:#22d3ee;color:#0a0e1a;border-color:#22d3ee;font-weight:600}}
-table{{width:100%;border-collapse:collapse;font-size:.76rem}}
-th{{background:#1e293b;color:#94a3b8;padding:7px 8px;text-align:left;
-  font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:.66rem;position:sticky;top:0}}
-td{{padding:6px 8px;border-bottom:1px solid #1e2744}}
-tr:hover{{background:#1a2235}}
-.badge{{padding:2px 7px;border-radius:4px;font-size:.66rem;font-weight:600}}
-.badge-long{{background:#064e3b;color:#34d399}}
-.badge-short{{background:#7f1d1d;color:#f87171}}
-.badge-trending{{background:#1e3a5f;color:#60a5fa}}
-.badge-mr{{background:#3b1f5e;color:#c084fc}}
-.badge-neutral{{background:#374151;color:#9ca3af}}
-.stbl{{max-height:500px;overflow-y:auto}}
-.tcol{{display:grid;grid-template-columns:1fr 1fr;gap:20px}}
-@media(max-width:900px){{.tcol{{grid-template-columns:1fr}}}}
-.fc{{background:#0f1629;border:1px solid #1e2744;border-radius:8px;padding:10px 14px;
-  display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:.78rem}}
-.fc .fi{{font-weight:700;color:#22d3ee;width:55px}}
-.fc .fs{{display:flex;gap:14px}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0e1a;color:#c8d0e0}
+.header{background:linear-gradient(135deg,#0f1629,#1a1f3a);padding:20px 30px;
+  border-bottom:1px solid #1e2744;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:1.5rem;color:#e2e8f0}
+.header h1 span{color:#22d3ee}
+.header .ts{color:#64748b;font-size:.8rem}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:22px}
+.sc{background:#111827;border:1px solid #1e2744;border-radius:10px;padding:14px;text-align:center}
+.sc:hover{border-color:#334155}
+.sl{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.sv{font-size:1.5rem;font-weight:700}
+.ss{font-size:.7rem;color:#64748b;margin-top:3px}
+.g{color:#22c55e}.r{color:#ef4444}.b{color:#3b82f6}.cy{color:#22d3ee}.or{color:#f97316}
+.cc{background:#111827;border:1px solid #1e2744;border-radius:10px;padding:20px;margin-bottom:22px}
+.cc h2{font-size:1rem;color:#94a3b8;margin-bottom:12px}
+.cw{height:340px;position:relative}
+.sec{background:#111827;border:1px solid #1e2744;border-radius:10px;padding:20px;margin-bottom:22px}
+.sec h2{font-size:1rem;color:#94a3b8;margin-bottom:12px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{padding:5px 14px;border-radius:6px;cursor:pointer;font-size:.78rem;
+  background:#1e293b;color:#94a3b8;border:1px solid #334155}
+.tab.active{background:#22d3ee;color:#0a0e1a;border-color:#22d3ee;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+th{background:#1e293b;color:#94a3b8;padding:7px 8px;text-align:left;
+  font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:.66rem;position:sticky;top:0}
+td{padding:6px 8px;border-bottom:1px solid #1e2744}
+tr:hover{background:#1a2235}
+.badge{padding:2px 7px;border-radius:4px;font-size:.66rem;font-weight:600}
+.badge-long{background:#064e3b;color:#34d399}
+.badge-short{background:#7f1d1d;color:#f87171}
+.badge-trending{background:#1e3a5f;color:#60a5fa}
+.badge-mr{background:#3b1f5e;color:#c084fc}
+.badge-neutral{background:#374151;color:#9ca3af}
+.stbl{max-height:500px;overflow-y:auto}
+.tcol{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.tcol{grid-template-columns:1fr}}
+.fc{background:#0f1629;border:1px solid #1e2744;border-radius:8px;padding:10px 14px;
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:.78rem}
+.fc .fi{font-weight:700;color:#22d3ee;width:55px}
+.fc .fs{display:flex;gap:14px}
 </style>
 </head>
 <body>
 <div class="header">
   <h1><span>&#9883;</span> Auto-Trader <span>Dashboard</span></h1>
-  <div class="ts">Backtest completed {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>
+  <div class="ts">Backtest completed __TIMESTAMP__</div>
 </div>
 <div class="container">
 <div class="sg" id="stats-grid"></div>
@@ -175,11 +175,11 @@ tr:hover{{background:#1a2235}}
 </div>
 </div>
 <script>
-var D={data_json};
+var D=__DATA_JSON__;
 var R=D.results,T=D.trades,E=D.equity,F=D.folds;
-function $(s){{return document.getElementById(s)}}
-function fmt(n){{return n.toLocaleString('en-US',{{minimumFractionDigits:0,maximumFractionDigits:0}})}}
-function fmt2(n){{return n.toLocaleString('en-US',{{minimumFractionDigits:2,maximumFractionDigits:2}})}}
+function $(s){return document.getElementById(s)}
+function fmt(n){return n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}
+function fmt2(n){return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
 // Stats
 var stats=[
@@ -193,54 +193,54 @@ var stats=[
   ['Avg Win','$'+fmt(R.avg_win),'g','Per winning trade'],
   ['Avg Loss','$'+fmt(Math.abs(R.avg_loss)),'r','Per losing trade'],
 ];
-var sh='';stats.forEach(function(s){{
+var sh='';stats.forEach(function(s){
   sh+='<div class="sc"><div class="sl">'+s[0]+'</div><div class="sv '+s[2]+'">'+s[1]+'</div><div class="ss">'+s[3]+'</div></div>';
-}});$('stats-grid').innerHTML=sh;
+});$('stats-grid').innerHTML=sh;
 
 // Equity chart
-(function(){{
+(function(){
   var ctx=$('eqChart').getContext('2d');
-  new Chart(ctx,{{type:'line',data:{{labels:E.map(e=>e.date),datasets:[
-    {{label:'Portfolio',data:E.map(e=>e.capital),borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,0.08)',
-     fill:true,tension:.3,pointRadius:0,borderWidth:2}}
-  ]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}}}},
-    scales:{{x:{{ticks:{{color:'#64748b',maxTicksToShow:12}},grid:{{color:'#1e2744'}}}},
-            y:{{ticks:{{color:'#64748b',callback:v=>'$'+v.toLocaleString()}},grid:{{color:'#1e2744'}}}}}}}}}});
-}})();
+  new Chart(ctx,{type:'line',data:{labels:E.map(e=>e.date),datasets:[
+    {label:'Portfolio',data:E.map(e=>e.capital),borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,0.08)',
+     fill:true,tension:.3,pointRadius:0,borderWidth:2}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#64748b',maxTicksToShow:12},grid:{color:'#1e2744'}},
+            y:{ticks:{color:'#64748b',callback:v=>'$'+v.toLocaleString()},grid:{color:'#1e2744'}}}}});
+})();
 
 // Drawdown
-(function(){{
+(function(){
   var caps=E.map(e=>e.capital),peak=caps[0];
-  var dd=caps.map(c=>{{peak=Math.max(peak,c);return ((c-peak)/peak)*100}});
+  var dd=caps.map(c=>{peak=Math.max(peak,c);return ((c-peak)/peak)*100});
   var ctx=$('ddChart').getContext('2d');
-  new Chart(ctx,{{type:'line',data:{{labels:E.map(e=>e.date),datasets:[
-    {{label:'DD%',data:dd,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',
-     fill:true,tension:.3,pointRadius:0,borderWidth:1.5}}
-  ]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}}}},
-    scales:{{x:{{ticks:{{color:'#64748b',maxTicksToShow:8}},grid:{{color:'#1e2744'}}}},
-            y:{{ticks:{{color:'#64748b',callback:v=>v.toFixed(0)+'%'}},grid:{{color:'#1e2744'}}}}}}}}}});
-}})();
+  new Chart(ctx,{type:'line',data:{labels:E.map(e=>e.date),datasets:[
+    {label:'DD%',data:dd,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',
+     fill:true,tension:.3,pointRadius:0,borderWidth:1.5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#64748b',maxTicksToShow:8},grid:{color:'#1e2744'}},
+            y:{ticks:{color:'#64748b',callback:v=>v.toFixed(0)+'%'},grid:{color:'#1e2744'}}}}});
+})();
 
 // P&L Histogram
-(function(){{
+(function(){
   var pnls=T.map(t=>t.pnl);if(!pnls.length)return;
   var mn=Math.min(...pnls),mx=Math.max(...pnls),bins=20,step=(mx-mn)/bins;
   var labels=[],counts=[],colors=[];
-  for(var i=0;i<bins;i++){{
+  for(var i=0;i<bins;i++){
     var lo=mn+i*step;labels.push('$'+lo.toFixed(0));
     counts.push(pnls.filter(p=>p>=lo&&p<lo+step).length);
     colors.push(lo+step/2>=0?'rgba(34,197,94,0.7)':'rgba(239,68,68,0.7)');
-  }}
+  }
   var ctx=$('pnlHist').getContext('2d');
-  new Chart(ctx,{{type:'bar',data:{{labels:labels,datasets:[
-    {{label:'Trades',data:counts,backgroundColor:colors,borderWidth:0}}
-  ]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}}}},
-    scales:{{x:{{ticks:{{color:'#64748b',maxRotation:45}},grid:{{display:false}}}},
-            y:{{ticks:{{color:'#64748b'}},grid:{{color:'#1e2744'}}}}}}}}}});
-}})();
+  new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
+    {label:'Trades',data:counts,backgroundColor:colors,borderWidth:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#64748b',maxRotation:45},grid:{display:false}},
+            y:{ticks:{color:'#64748b'},grid:{color:'#1e2744'}}}}});
+})();
 
 // Folds
-var fh='';F.forEach(function(f){{
+var fh='';F.forEach(function(f){
   var rc=f.roi_pct>=0?'g':'r',wc=f.win_rate>=50?'g':'or';
   fh+='<div class="fc"><div class="fi">Fold '+f.fold+'</div><div class="fs">'
     +'<span>'+f.n_trades+' trades</span>'
@@ -248,11 +248,11 @@ var fh='';F.forEach(function(f){{
     +'<span class="'+rc+'">'+(f.roi_pct>=0?'+':'')+f.roi_pct.toFixed(1)+'% ROI</span>'
     +'<span>$'+fmt(f.starting_capital)+' → $'+fmt(f.ending_capital)+'</span>'
     +'</div></div>';
-}});$('folds-container').innerHTML=fh;
+});$('folds-container').innerHTML=fh;
 
 // Trades table
 $('trade-title').textContent='Trade Log ('+T.length+' trades)';
-var tb='';T.forEach(function(t,i){{
+var tb='';T.forEach(function(t,i){
   var dc=t.direction==='LONG'?'long':'short';
   var pc=t.pnl>=0?'g':'r';
   var rc=t.regime==='Trending'?'trending':t.regime==='Mean-Rev'?'mr':'neutral';
@@ -268,22 +268,22 @@ var tb='';T.forEach(function(t,i){{
     +'<td>'+t.signal_strength.toFixed(2)+'</td>'
     +'<td><span class="badge badge-'+rc+'">'+t.regime+'</span></td>'
     +'<td>'+t.exit_reason+'</td></tr>';
-}});$('tbody').innerHTML=tb;
+});$('tbody').innerHTML=tb;
 
-function filterT(f,el){{
+function filterT(f,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  document.querySelectorAll('.trow').forEach(r=>{{
+  document.querySelectorAll('.trow').forEach(r=>{
     if(f==='all')r.style.display='';
     else if(f==='win')r.style.display=r.dataset.won==='win'?'':'none';
     else if(f==='loss')r.style.display=r.dataset.won==='loss'?'':'none';
     else if(f==='long')r.style.display=r.dataset.dir==='long'?'':'none';
     else if(f==='short')r.style.display=r.dataset.dir==='short'?'':'none';
-  }});
-}}
+  });
+}
 </script>
 </body>
-</html>"""
+</html>""".replace("__DATA_JSON__", data_json).replace("__TIMESTAMP__", timestamp)
 
 
 @app.route("/")

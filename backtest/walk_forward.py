@@ -233,6 +233,11 @@ class WalkForwardBacktester:
                 if direction == -1 and signal_val > 0.3:
                     continue
 
+                # Volume confirmation: skip if volume is below average
+                vol_ratio = row.get("volume_ratio", 1.0)
+                if isinstance(vol_ratio, (int, float)) and vol_ratio < 0.8:
+                    continue
+
                 # Kelly position sizing
                 drawdown = max(0, (peak_capital - capital) / peak_capital)
                 win_prob = pred_prob if direction == 1 else (1 - pred_prob)

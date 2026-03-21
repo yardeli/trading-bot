@@ -1,0 +1,133 @@
+{
+  "initial_capital": 10000.0,
+  "final_capital": 32927.58,
+  "total_return_pct": 229.28,
+  "total_pnl": 25197.67,
+  "roi_pct": 1.11,
+  "n_trades": 1183,
+  "n_wins": 458,
+  "n_losses": 725,
+  "win_rate": 38.7,
+  "sharpe_ratio": 1.083,
+  "max_drawdown_pct": 32.75,
+  "profit_factor": 1.149,
+  "avg_win": 423.18,
+  "avg_loss": 232.58,
+  "win_loss_ratio": 1.82,
+  "n_folds": 10,
+  "fold_results": [
+    {
+      "fold": 0,
+      "n_trades": 112,
+      "wins": 45,
+      "losses": 67,
+      "win_rate": 40.17857142857143,
+      "total_pnl": 4494.77,
+      "roi_pct": 7.06,
+      "starting_capital": 10000.0,
+      "ending_capital": 14431.13
+    },
+    {
+      "fold": 1,
+      "n_trades": 108,
+      "wins": 52,
+      "losses": 56,
+      "win_rate": 48.148148148148145,
+      "total_pnl": 4580.87,
+      "roi_pct": 4.02,
+      "starting_capital": 14431.13,
+      "ending_capital": 18897.98
+    },
+    {
+      "fold": 2,
+      "n_trades": 119,
+      "wins": 52,
+      "losses": 67,
+      "win_rate": 43.69747899159664,
+      "total_pnl": -1156.53,
+      "roi_pct": -0.79,
+      "starting_capital": 18897.98,
+      "ending_capital": 17595.75
+    },
+    {
+      "fold": 3,
+      "n_trades": 101,
+      "wins": 44,
+      "losses": 57,
+      "win_rate": 43.56435643564357,
+      "total_pnl": 7099.7,
+      "roi_pct": 4.64,
+      "starting_capital": 17595.75,
+      "ending_capital": 24542.41
+    },
+    {
+      "fold": 4,
+      "n_trades": 86,
+      "wins": 36,
+      "losses": 50,
+      "win_rate": 41.86046511627907,
+      "total_pnl": 13012.84,
+      "roi_pct": 8.35,
+      "starting_capital": 24542.41,
+      "ending_capital": 37399.43
+    },
+    {
+      "fold": 5,
+      "n_trades": 97,
+      "wins": 34,
+      "losses": 63,
+      "win_rate": 35.051546391752574,
+      "total_pnl": 10113.36,
+      "roi_pct": 3.73,
+      "starting_capital": 37399.43,
+      "ending_capital": 47241.69
+    },
+    {
+      "fold": 6,
+      "n_trades": 114,
+      "wins": 38,
+      "losses": 76,
+      "win_rate": 33.33333333333333,
+      "total_pnl": -1710.14,
+      "roi_pct": -0.44,
+      "starting_capital": 47241.69,
+      "ending_capital": 45139.41
+    },
+    {
+      "fold": 7,
+      "n_trades": 137,
+      "wins": 44,
+      "losses": 93,
+      "win_rate": 32.11678832116788,
+      "total_pnl": -3174.12,
+      "roi_pct": -0.76,
+      "starting_capital": 45139.41,
+      "ending_capital": 41546.67
+    },
+    {
+      "fold": 8,
+      "n_trades": 132,
+      "wins": 48,
+      "losses": 84,
+      "win_rate": 36.36363636363637,
+      "total_pnl": -5114.87,
+      "roi_pct": -1.49,
+      "starting_capital": 41546.67,
+      "ending_capital": 36088.71
+    },
+    {
+      "fold": 9,
+      "n_trades": 177,
+      "wins": 65,
+      "losses": 112,
+      "win_rate": 36.72316384180791,
+      "total_pnl": -2948.22,
+      "roi_pct": -1.38,
+      "starting_capital": 36088.71,
+      "ending_capital": 32927.58
+    }
+  ],
+  "elapsed_seconds": 36.4,
+  "timestamp": "2026-03-20T19:09:10.079734",
+  "mode": "walk_forward"
+}

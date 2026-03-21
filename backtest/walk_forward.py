@@ -176,6 +176,23 @@ class WalkForwardBacktester:
                         del open_positions[sym]
                         continue
 
+                    # Time-based exit: close after 14 days to free capital
+                    hold_days = (date - pos.entry_date).days if hasattr(pos.entry_date, 'days') or hasattr(date, 'days') else 0
+                    try:
+                        hold_days = (pd.Timestamp(date) - pd.Timestamp(pos.entry_date)).days
+                    except Exception:
+                        hold_days = 0
+                    if hold_days >= 14:
+                        pos.exit_date = date
+                        pos.exit_price = current_price
+                        pos.pnl = pos.size * ret - abs(pos.size) * TRANSACTION_COST_PCT
+                        pos.pnl_pct = ret
+                        pos.exit_reason = "time_exit"
+                        capital += pos.pnl
+                        fold_trades.append(pos)
+                        del open_positions[sym]
+                        continue
+
                     # Trailing stop
                     high_since = data_dict[sym].loc[:date, "high"].iloc[-5:].max()
                     trail_ret = (current_price / high_since - 1) if pos.direction == 1 else (

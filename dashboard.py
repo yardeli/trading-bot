@@ -137,7 +137,10 @@ class DashboardCallback:
     def __init__(self):
         self.peak_equity = 0
         self.initial_capital = 1_000_000
-        self.return_history = []
+        self.return_history = []  # only NON-ZERO returns (skip warmup)
+        self.trading_started = False
+        self.trading_start_equity = 0
+        self.trading_days = 0
 
     def on_backtest_start(self, total_days, config_info, initial_capital):
         with lock:
@@ -146,17 +149,38 @@ class DashboardCallback:
             state["equity_history"] = []
             state["trade_log"] = []
             state["status"] = "running"
-            state["progress_msg"] = "Backtesting..."
+            state["progress_msg"] = "Warming up models..."
             state["initial_capital"] = initial_capital
         self.initial_capital = initial_capital
         self.peak_equity = initial_capital
+        self.trading_started = False
+        self.trading_start_equity = initial_capital
+        self.trading_days = 0
+        self.return_history = []
 
     def on_day_update(self, date, equity, weights=None, risk_metrics=None,
                       model_weights=None, trade_info=None):
         with lock:
             state["current_day"] += 1
-            state["equity_history"].append({"date": str(date)[:10], "equity": round(equity, 2)})
             state["progress"] = round(state["current_day"] / max(state["total_days"], 1) * 100, 1)
+
+            # Detect when trading actually starts (equity moves from initial capital)
+            equity_changed = abs(equity - self.initial_capital) > 1.0
+            if not self.trading_started and equity_changed:
+                self.trading_started = True
+                self.trading_start_equity = self.initial_capital
+                self.peak_equity = self.initial_capital
+                state["progress_msg"] = "Trading..."
+
+            # Only add to equity history once trading starts (skip flat warmup)
+            if self.trading_started:
+                state["equity_history"].append({"date": str(date)[:10], "equity": round(equity, 2)})
+                self.trading_days += 1
+            else:
+                # During warmup, just update progress message
+                state["progress_msg"] = f"Warming up models... (day {state['current_day']})"
+                return  # skip everything else during warmup
+
             if weights is not None:
                 state["current_weights"] = {k: round(v, 4) for k, v in weights.items() if abs(v) > 0.001}
             if risk_metrics is not None:
@@ -166,18 +190,24 @@ class DashboardCallback:
             if trade_info is not None:
                 state["trade_log"].append({k: (round(v, 4) if isinstance(v, float) else str(v)[:10] if hasattr(v, 'strftime') else v) for k, v in trade_info.items()})
 
-            n = len(state["equity_history"])
+            # Compute returns only from actual trading days (no warmup zeros)
+            eq_list = state["equity_history"]
+            n = len(eq_list)
             if n > 1:
-                prev = state["equity_history"][-2]["equity"]
-                self.return_history.append((equity - prev) / prev if prev else 0)
+                prev = eq_list[-2]["equity"]
+                ret = (equity - prev) / prev if prev else 0
+                self.return_history.append(ret)
+
             self.peak_equity = max(self.peak_equity, equity)
-            total_ret = equity / self.initial_capital - 1
+            total_ret = equity / self.trading_start_equity - 1
             dd = (equity - self.peak_equity) / self.peak_equity if self.peak_equity > 0 else 0
-            n_years = n / 252
+
+            # Use actual trading days for annualization (not warmup days)
+            n_years = self.trading_days / 252
             ann_ret = (1 + total_ret) ** (1 / n_years) - 1 if n_years > 0.05 else 0
             ann_vol = sharpe = sortino = win_rate = profit_factor = 0
-            if len(self.return_history) > 20:
-                rets = np.array(self.return_history[-252:])
+            if len(self.return_history) > 10:
+                rets = np.array(self.return_history)
                 ann_vol = float(np.std(rets) * np.sqrt(252))
                 if ann_vol > 0: sharpe = ann_ret / ann_vol
                 down = rets[rets < 0]

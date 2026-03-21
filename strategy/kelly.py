@@ -55,11 +55,12 @@ def dynamic_kelly(
     fraction: float = KELLY_FRACTION,
 ) -> float:
     """Kelly with drawdown-adaptive scaling.
-    Reduces position size as drawdown increases.
+    Uses sqrt curve for gentler reduction — still trades during drawdowns
+    but with smaller sizes. Minimum 20% of base Kelly.
     """
     base = kelly_fraction(win_prob, win_loss_ratio, fraction)
 
-    # Scale down linearly as drawdown increases
-    # At 0% drawdown: full size. At 20% drawdown: 0 size.
-    drawdown_scalar = max(0, 1 - current_drawdown / 0.20)
+    # Sqrt scaling: gentler reduction during drawdowns
+    # At 0% dd: 100%. At 15% dd: ~50%. At 30% dd: ~20% (floor).
+    drawdown_scalar = max(0.20, np.sqrt(max(0, 1 - current_drawdown / 0.30)))
     return base * drawdown_scalar

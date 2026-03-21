@@ -57,12 +57,12 @@ EQUAL_BLEND_WEIGHT = 0.5         # 50/50 blend as fallback
 
 # ── Risk Management ─────────────────────────────────────────────────
 INITIAL_CAPITAL = 10_000.0
-KELLY_FRACTION = 0.25            # quarter-Kelly
-MAX_POSITION_PCT = 0.15          # max 15% per position
-MAX_PORTFOLIO_EXPOSURE = 0.90    # max 90% invested
+KELLY_FRACTION = 0.30            # 30% Kelly (slightly more aggressive)
+MAX_POSITION_PCT = 0.20          # max 20% per position
+MAX_PORTFOLIO_EXPOSURE = 0.95    # max 95% invested
 STOP_LOSS_PCT = 0.05             # 5% stop-loss per position
 TAKE_PROFIT_PCT = 0.15           # 15% take-profit per position
-MAX_DRAWDOWN_HALT = 0.20         # halt trading at 20% drawdown
+MAX_DRAWDOWN_HALT = 0.30         # halt trading at 30% drawdown
 TRAILING_STOP_PCT = 0.08         # 8% trailing stop
 TRANSACTION_COST_PCT = 0.001     # 0.1% per trade (maker fees)
 

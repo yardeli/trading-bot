@@ -46,22 +46,31 @@ class EnsembleModel:
         y = train_df[target_col].values
         self.feature_cols_used = used_cols
 
+        # Recency-weighted samples: exponential decay, recent data 3x more important
+        if "date" in train_df.columns:
+            dates = pd.to_datetime(train_df["date"])
+            days_ago = (dates.max() - dates).dt.days.values.astype(float)
+            sample_weight = np.exp(-days_ago / (len(days_ago) * 0.5))
+            sample_weight = sample_weight / sample_weight.mean()  # normalize
+        else:
+            sample_weight = np.ones(len(y))
+
         # Scale for Ridge
         X_scaled = self.scaler.fit_transform(X)
 
         # XGBoost
-        xgb_model = xgb.XGBClassifier(**XGB_PARAMS, use_label_encoder=False, eval_metric="logloss")
-        xgb_model.fit(X_scaled, y)
+        xgb_model = xgb.XGBClassifier(**XGB_PARAMS, eval_metric="logloss")
+        xgb_model.fit(X_scaled, y, sample_weight=sample_weight)
         self.models["xgboost"] = xgb_model
 
         # LightGBM
         lgb_model = lgb.LGBMClassifier(**LGB_PARAMS)
-        lgb_model.fit(X_scaled, y)
+        lgb_model.fit(X_scaled, y, sample_weight=sample_weight)
         self.models["lightgbm"] = lgb_model
 
         # Ridge (probability via sigmoid of decision function)
         ridge_model = Ridge(alpha=1.0)
-        ridge_model.fit(X_scaled, y)
+        ridge_model.fit(X_scaled, y, sample_weight=sample_weight)
         self.models["ridge"] = ridge_model
 
         self.is_fitted = True

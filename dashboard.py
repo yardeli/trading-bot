@@ -306,9 +306,32 @@ def _live_rebalance(tc, config):
     with lock:
         state["progress_msg"] = "Fetching historical data..."
 
-    # 1. Historical data for model warmup
-    feed = DataFeed(config.data)
+    # 1. Map Alpaca crypto symbols (BTC/USD) to yfinance (BTC-USD) for data fetch
+    alpaca_to_yf = {}
+    yf_tickers = []
+    for t in config.data.tickers:
+        if '/' in t:
+            yf_sym = t.replace('/', '-')
+            alpaca_to_yf[yf_sym] = t
+            yf_tickers.append(yf_sym)
+        else:
+            alpaca_to_yf[t] = t
+            yf_tickers.append(t)
+
+    data_config_copy = SystemConfig().data
+    data_config_copy.tickers = yf_tickers
+    feed = DataFeed(data_config_copy)
     feed.load()
+
+    # Rename columns back to Alpaca symbols for trading
+    rename_map = {yf: alp for yf, alp in alpaca_to_yf.items() if yf != alp}
+    if rename_map:
+        feed.prices = feed.prices.rename(columns=rename_map)
+        feed.returns = feed.returns.rename(columns=rename_map)
+        if feed.volume is not None: feed.volume = feed.volume.rename(columns=rename_map)
+        if feed.high is not None: feed.high = feed.high.rename(columns=rename_map)
+        if feed.low is not None: feed.low = feed.low.rename(columns=rename_map)
+
     tradeable = list(feed.prices.columns)
 
     # 2. Features + signals
@@ -394,8 +417,10 @@ def _live_rebalance(tc, config):
             continue
 
         try:
+            # Crypto uses GTC, stocks use DAY
+            tif = TimeInForce.GTC if '/' in ticker else TimeInForce.DAY
             order = tc.submit_order(MarketOrderRequest(
-                symbol=ticker, notional=notional, side=side, time_in_force=TimeInForce.DAY))
+                symbol=ticker, notional=notional, side=side, time_in_force=tif))
             trades_made.append({"time": datetime.now().strftime("%H:%M:%S"), "symbol": ticker,
                                  "side": side.value, "notional": notional, "status": "submitted",
                                  "order_id": str(order.id)[:8]})
@@ -427,15 +452,32 @@ def _run_live_trading(interval):
         logger.info(f"Alpaca connected. Equity: ${float(acct.equity):,.2f}")
 
         config = SystemConfig()
-        # Filter to tradeable tickers
+
+        # Check if market is open to decide which tickers to use
+        clock = tc.get_clock()
+        is_market_open = clock.is_open
+
+        # Crypto tickers trade 24/7 — use these when stock market is closed
+        CRYPTO_TICKERS = ["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "AVAX/USD",
+                          "LINK/USD", "DOT/USD", "LTC/USD"]
+
+        if is_market_open:
+            # Use full universe: stocks + crypto
+            candidate_tickers = config.data.tickers + CRYPTO_TICKERS
+        else:
+            # Weekend/after-hours: crypto only (always tradeable)
+            candidate_tickers = CRYPTO_TICKERS
+            logger.info("Market closed — switching to crypto-only mode (trades 24/7)")
+
+        # Filter to tradeable
         tradeable = []
-        for t in config.data.tickers:
+        for t in candidate_tickers:
             try:
                 asset = tc.get_asset(t)
                 if asset.tradable: tradeable.append(t)
             except: pass
         config.data.tickers = tradeable
-        logger.info(f"Tradeable: {len(tradeable)} tickers")
+        logger.info(f"Tradeable: {len(tradeable)} tickers ({', '.join(tradeable[:8])}{'...' if len(tradeable)>8 else ''})")
 
         init_equity = float(acct.equity)
         with lock:
@@ -484,15 +526,11 @@ def _run_live_trading(interval):
             if live_stop_event.is_set():
                 break
 
-            # Rebalance
+            # Rebalance — always runs (crypto trades 24/7)
             try:
                 clock = tc.get_clock()
                 with lock: state["market_open"] = clock.is_open
-                if clock.is_open:
-                    _live_rebalance(tc, config)
-                else:
-                    with lock: state["progress_msg"] = f"Market closed. Next open: {clock.next_open}"
-                    logger.info(f"Market closed, next open: {clock.next_open}")
+                _live_rebalance(tc, config)
             except Exception as e:
                 logger.error(f"Rebalance error: {e}")
                 with lock: state["progress_msg"] = f"Error: {e}"

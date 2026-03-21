@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+build/
+outputs/backtest_*.json
+outputs/universe_closes.csv
+.venv/

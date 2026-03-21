@@ -79,22 +79,25 @@ MIN_TRADES_PER_FOLD = 20         # minimum trades for valid fold
 ENSEMBLE_MODELS = ["xgboost", "lightgbm", "ridge"]
 ENSEMBLE_WEIGHTS = [0.4, 0.4, 0.2]  # XGB, LGB, Ridge
 XGB_PARAMS = {
-    "n_estimators": 200,
-    "max_depth": 5,
-    "learning_rate": 0.05,
-    "subsample": 0.8,
-    "colsample_bytree": 0.8,
-    "reg_alpha": 0.1,
-    "reg_lambda": 1.0,
+    "n_estimators": 350,
+    "max_depth": 6,
+    "learning_rate": 0.03,
+    "subsample": 0.75,
+    "colsample_bytree": 0.75,
+    "reg_alpha": 0.3,
+    "reg_lambda": 2.0,
+    "min_child_weight": 5,
+    "gamma": 0.1,
 }
 LGB_PARAMS = {
-    "n_estimators": 200,
-    "max_depth": 5,
-    "learning_rate": 0.05,
-    "subsample": 0.8,
-    "colsample_bytree": 0.8,
-    "reg_alpha": 0.1,
-    "reg_lambda": 1.0,
+    "n_estimators": 350,
+    "max_depth": 6,
+    "learning_rate": 0.03,
+    "subsample": 0.75,
+    "colsample_bytree": 0.75,
+    "reg_alpha": 0.3,
+    "reg_lambda": 2.0,
+    "min_child_samples": 10,
     "verbose": -1,
 }
 

@@ -1,0 +1,100 @@
+{
+  "initial_capital": 10000.0,
+  "final_capital": 68427.58,
+  "total_return_pct": 584.28,
+  "total_pnl": 59773.31,
+  "roi_pct": 4.44,
+  "n_trades": 297,
+  "n_wins": 146,
+  "n_losses": 151,
+  "win_rate": 49.2,
+  "sharpe_ratio": 1.271,
+  "max_drawdown_pct": 25.22,
+  "profit_factor": 1.557,
+  "avg_win": 1143.84,
+  "avg_loss": 710.11,
+  "win_loss_ratio": 1.611,
+  "n_folds": 7,
+  "fold_results": [
+    {
+      "fold": 0,
+      "n_trades": 41,
+      "wins": 24,
+      "losses": 17,
+      "win_rate": 58.536585365853654,
+      "total_pnl": 13315.1,
+      "roi_pct": 29.87,
+      "starting_capital": 10000.0,
+      "ending_capital": 23270.52
+    },
+    {
+      "fold": 1,
+      "n_trades": 43,
+      "wins": 26,
+      "losses": 17,
+      "win_rate": 60.46511627906976,
+      "total_pnl": 2677.08,
+      "roi_pct": 2.79,
+      "starting_capital": 23270.52,
+      "ending_capital": 25851.56
+    },
+    {
+      "fold": 2,
+      "n_trades": 46,
+      "wins": 21,
+      "losses": 25,
+      "win_rate": 45.65217391304348,
+      "total_pnl": 1851.74,
+      "roi_pct": 1.52,
+      "starting_capital": 25851.56,
+      "ending_capital": 27581.57
+    },
+    {
+      "fold": 3,
+      "n_trades": 37,
+      "wins": 19,
+      "losses": 18,
+      "win_rate": 51.35135135135135,
+      "total_pnl": 20422.53,
+      "roi_pct": 20.65,
+      "starting_capital": 27581.57,
+      "ending_capital": 47905.21
+    },
+    {
+      "fold": 4,
+      "n_trades": 36,
+      "wins": 19,
+      "losses": 17,
+      "win_rate": 52.77777777777778,
+      "total_pnl": 50815.51,
+      "roi_pct": 28.98,
+      "starting_capital": 47905.21,
+      "ending_capital": 98545.39
+    },
+    {
+      "fold": 5,
+      "n_trades": 46,
+      "wins": 21,
+      "losses": 25,
+      "win_rate": 45.65217391304348,
+      "total_pnl": -12452.18,
+      "roi_pct": -2.48,
+      "starting_capital": 98545.39,
+      "ending_capital": 85591.65
+    },
+    {
+      "fold": 6,
+      "n_trades": 48,
+      "wins": 16,
+      "losses": 32,
+      "win_rate": 33.33333333333333,
+      "total_pnl": -16856.47,
+      "roi_pct": -5.48,
+      "starting_capital": 85591.65,
+      "ending_capital": 68427.58
+    }
+  ],
+  "elapsed_seconds": 13.3,
+  "timestamp": "2026-03-20T19:12:42.811664",
+  "mode": "walk_forward"
+}

@@ -472,6 +472,8 @@ def _live_rebalance(tc, config):
                                      "side": "CLOSE", "notional": 0, "status": f"error: {e}"})
         else:
             notional = round(trade["value"], 2)
+            if notional < 11:  # Alpaca crypto minimum is $10
+                continue
             try:
                 tif = TimeInForce.GTC if trade["crypto"] else TimeInForce.DAY
                 order = tc.submit_order(MarketOrderRequest(
@@ -495,7 +497,7 @@ def _live_rebalance(tc, config):
     for trade in buys:
         ticker = trade["ticker"]
         notional = round(min(trade["value"], available_cash * 0.95), 2)  # Keep 5% buffer
-        if notional < 1:
+        if notional < 11:  # Alpaca crypto minimum is $10
             continue
 
         try:

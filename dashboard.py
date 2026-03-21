@@ -384,50 +384,102 @@ def _live_rebalance(tc, config):
         state["current_weights"] = {k: round(float(v), 4) for k, v in target_weights.items() if abs(v) > 0.001}
         state["risk_metrics"] = rm.get_risk_report()
 
-    # 6. Execute trades
+    # 6. Execute trades — carefully manage cash and avoid impossible orders
     with lock: state["progress_msg"] = "Executing trades..."
     trades_made = []
+
+    # Build a map of what we currently hold
+    held_symbols = {}
+    for p in positions:
+        held_symbols[p.symbol] = float(p.market_value)
+
+    # Compute all desired trades
+    desired_trades = []
     for ticker, tw in target_weights.items():
         target_value = equity * tw
-        current_value = 0
-        for p in positions:
-            if p.symbol == ticker:
-                current_value = float(p.market_value)
-                break
+        current_value = held_symbols.get(ticker, 0)
         trade_value = target_value - current_value
 
         if abs(trade_value) < equity * 0.005:
             continue  # skip tiny trades
 
-        if abs(tw) < 0.001 and current_value != 0:
-            # Close position
+        is_crypto = '/' in ticker
+
+        # Skip short-sells on crypto (Alpaca doesn't allow it)
+        if is_crypto and trade_value < 0 and current_value <= 0:
+            continue
+
+        # Close position if target weight is ~0
+        if abs(tw) < 0.001 and current_value > 0:
+            desired_trades.append({"ticker": ticker, "action": "close", "value": current_value, "crypto": is_crypto})
+            continue
+
+        if trade_value > 0:
+            desired_trades.append({"ticker": ticker, "action": "buy", "value": abs(trade_value), "crypto": is_crypto})
+        elif trade_value < 0 and current_value > 0:
+            # Only sell what we actually hold
+            sell_value = min(abs(trade_value), current_value)
+            desired_trades.append({"ticker": ticker, "action": "sell", "value": sell_value, "crypto": is_crypto})
+
+    # Execute SELLS and CLOSES first (frees up cash), then BUYS
+    sells = [t for t in desired_trades if t["action"] in ("sell", "close")]
+    buys = [t for t in desired_trades if t["action"] == "buy"]
+
+    # Track available cash
+    available_cash = float(tc.get_account().cash)
+
+    for trade in sells:
+        ticker = trade["ticker"]
+        if trade["action"] == "close":
             try:
                 tc.close_position(ticker)
+                available_cash += trade["value"]
                 trades_made.append({"time": datetime.now().strftime("%H:%M:%S"), "symbol": ticker,
-                                     "side": "CLOSE", "notional": round(abs(current_value), 2), "status": "filled"})
-                logger.info(f"  CLOSE {ticker}")
+                                     "side": "CLOSE", "notional": round(trade["value"], 2), "status": "filled"})
+                logger.info(f"  CLOSE {ticker} (+${trade['value']:,.0f} cash)")
             except Exception as e:
                 trades_made.append({"time": datetime.now().strftime("%H:%M:%S"), "symbol": ticker,
                                      "side": "CLOSE", "notional": 0, "status": f"error: {e}"})
-            continue
+        else:
+            notional = round(trade["value"], 2)
+            try:
+                tif = TimeInForce.GTC if trade["crypto"] else TimeInForce.DAY
+                order = tc.submit_order(MarketOrderRequest(
+                    symbol=ticker, notional=notional, side=OrderSide.SELL, time_in_force=tif))
+                available_cash += notional
+                trades_made.append({"time": datetime.now().strftime("%H:%M:%S"), "symbol": ticker,
+                                     "side": "sell", "notional": notional, "status": "submitted",
+                                     "order_id": str(order.id)[:8]})
+                logger.info(f"  SELL ${notional:,.0f} of {ticker}")
+            except Exception as e:
+                trades_made.append({"time": datetime.now().strftime("%H:%M:%S"), "symbol": ticker,
+                                     "side": "sell", "notional": notional, "status": f"error: {e}"})
 
-        side = OrderSide.BUY if trade_value > 0 else OrderSide.SELL
-        notional = round(abs(trade_value), 2)
+    # Small delay to let sells settle
+    if sells:
+        import time as _time
+        _time.sleep(1)
+        available_cash = float(tc.get_account().cash)
+
+    # Now execute buys, respecting available cash
+    for trade in buys:
+        ticker = trade["ticker"]
+        notional = round(min(trade["value"], available_cash * 0.95), 2)  # Keep 5% buffer
         if notional < 1:
             continue
 
         try:
-            # Crypto uses GTC, stocks use DAY
-            tif = TimeInForce.GTC if '/' in ticker else TimeInForce.DAY
+            tif = TimeInForce.GTC if trade["crypto"] else TimeInForce.DAY
             order = tc.submit_order(MarketOrderRequest(
-                symbol=ticker, notional=notional, side=side, time_in_force=tif))
+                symbol=ticker, notional=notional, side=OrderSide.BUY, time_in_force=tif))
+            available_cash -= notional
             trades_made.append({"time": datetime.now().strftime("%H:%M:%S"), "symbol": ticker,
-                                 "side": side.value, "notional": notional, "status": "submitted",
+                                 "side": "buy", "notional": notional, "status": "submitted",
                                  "order_id": str(order.id)[:8]})
-            logger.info(f"  {side.value} ${notional:,.0f} of {ticker}")
+            logger.info(f"  BUY ${notional:,.0f} of {ticker} (cash left: ${available_cash:,.0f})")
         except Exception as e:
             trades_made.append({"time": datetime.now().strftime("%H:%M:%S"), "symbol": ticker,
-                                 "side": side.value, "notional": notional, "status": f"error: {e}"})
+                                 "side": "buy", "notional": notional, "status": f"error: {e}"})
             logger.warning(f"  Failed {ticker}: {e}")
 
     # 7. Record
